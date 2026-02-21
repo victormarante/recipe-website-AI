@@ -116,6 +116,18 @@ const modalOverlay  = $('#modal-overlay');
 const deleteOverlay = $('#delete-overlay');
 const recipeForm    = $('#recipe-form');
 
+// ── Icon helper (uses inline SVG sprite, no external font) ────────────────────
+
+function icon(name) {
+  const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+  svg.setAttribute('aria-hidden', 'true');
+  svg.classList.add('md-icon');
+  const use = document.createElementNS('http://www.w3.org/2000/svg', 'use');
+  use.setAttribute('href', `#icon-${name}`);
+  svg.appendChild(use);
+  return svg;
+}
+
 // ── Category helpers ──────────────────────────────────────────────────────────
 
 function getAllCategories(recipes) {
@@ -221,13 +233,13 @@ function buildCard(recipe) {
   const editBtn = document.createElement('button');
   editBtn.className = 'btn-icon';
   editBtn.title = 'Edit recipe';
-  editBtn.textContent = '✏️';
+  editBtn.appendChild(icon('edit'));
   editBtn.addEventListener('click', e => { e.stopPropagation(); openEditModal(recipe.id); });
 
   const delBtn = document.createElement('button');
   delBtn.className = 'btn-icon';
   delBtn.title = 'Delete recipe';
-  delBtn.textContent = '🗑️';
+  delBtn.appendChild(icon('delete'));
   delBtn.addEventListener('click', e => { e.stopPropagation(); openDeleteModal(recipe.id); });
 
   actions.appendChild(editBtn);
@@ -268,11 +280,13 @@ function showDetail(id) {
   detailActions.className = 'detail-actions';
   const editBtn = document.createElement('button');
   editBtn.className = 'btn btn-secondary';
-  editBtn.textContent = '✏️ Edit';
+  editBtn.appendChild(icon('edit'));
+  editBtn.appendChild(document.createTextNode(' Edit'));
   editBtn.addEventListener('click', () => openEditModal(recipe.id));
   const delBtn = document.createElement('button');
   delBtn.className = 'btn btn-danger';
-  delBtn.textContent = '🗑️ Delete';
+  delBtn.appendChild(icon('delete'));
+  delBtn.appendChild(document.createTextNode(' Delete'));
   delBtn.addEventListener('click', () => openDeleteModal(recipe.id));
   detailActions.appendChild(editBtn);
   detailActions.appendChild(delBtn);
@@ -329,14 +343,16 @@ function showDetail(id) {
       const a = document.createElement('a');
       if (link.type === 'recipe') {
         const linked = recipes.find(r => r.id === link.id);
-        a.textContent = '🔗 ' + (linked ? linked.title : 'Unknown recipe');
+        a.appendChild(icon('link'));
+        a.appendChild(document.createTextNode(' ' + (linked ? linked.title : 'Unknown recipe')));
         a.href = '#';
         a.addEventListener('click', e => {
           e.preventDefault();
           if (linked) showDetail(linked.id);
         });
       } else {
-        a.textContent = '🌐 ' + (link.label || link.url);
+        a.appendChild(icon('public'));
+        a.appendChild(document.createTextNode(' ' + (link.label || link.url)));
         a.href = link.url;
         a.target = '_blank';
         a.rel = 'noopener noreferrer';
@@ -388,6 +404,7 @@ function selectCategory(cat) {
   renderCategories();
   renderRecipeList();
   showView('list');
+  closeSidebar();
 }
 
 function showCategoriesHome() {
@@ -556,7 +573,7 @@ function addLinkRow(link = {}) {
   removeBtn.type = 'button';
   removeBtn.className = 'btn-icon';
   removeBtn.title = 'Remove';
-  removeBtn.textContent = '✕';
+  removeBtn.appendChild(icon('close'));
   removeBtn.addEventListener('click', () => row.remove());
 
   row.appendChild(typeSelect);
@@ -579,7 +596,7 @@ function buildTextRow(value, placeholder, onRemove) {
   removeBtn.type = 'button';
   removeBtn.className = 'btn-icon';
   removeBtn.title = 'Remove';
-  removeBtn.textContent = '✕';
+  removeBtn.appendChild(icon('close'));
   removeBtn.addEventListener('click', onRemove);
 
   row.appendChild(input);
@@ -730,13 +747,20 @@ function wireEvents() {
   $('#btn-confirm-delete').addEventListener('click', confirmDelete);
   $('#btn-cancel-delete').addEventListener('click', closeDeleteModal);
 
+  // Mobile sidebar drawer
+  $('#btn-menu-toggle').addEventListener('click', toggleSidebar);
+  $('#drawer-overlay').addEventListener('click', closeSidebar);
+
+  // FAB (mobile)
+  $('#fab-add').addEventListener('click', openAddModal);
+
   // Close modals on backdrop click
   modalOverlay.addEventListener('click', e => { if (e.target === modalOverlay) closeModal(); });
   deleteOverlay.addEventListener('click', e => { if (e.target === deleteOverlay) closeDeleteModal(); });
 
   // Escape key closes modals
   document.addEventListener('keydown', e => {
-    if (e.key === 'Escape') { closeModal(); closeDeleteModal(); }
+    if (e.key === 'Escape') { closeModal(); closeDeleteModal(); closeSidebar(); }
   });
 
   // Search
@@ -751,6 +775,20 @@ function wireEvents() {
       showCategoriesHome();
     }
   });
+}
+
+// ── Mobile sidebar drawer ─────────────────────────────────────────────────────
+
+function toggleSidebar() {
+  const sidebar = $('#sidebar');
+  const overlay = $('#drawer-overlay');
+  const isOpen = sidebar.classList.toggle('open');
+  overlay.classList.toggle('hidden', !isOpen);
+}
+
+function closeSidebar() {
+  $('#sidebar').classList.remove('open');
+  $('#drawer-overlay').classList.add('hidden');
 }
 
 // ── Bootstrap ─────────────────────────────────────────────────────────────────
