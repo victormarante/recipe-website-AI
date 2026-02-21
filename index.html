@@ -1,27 +1,108 @@
-<html>
+<!DOCTYPE html>
+<html lang="en">
   <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Recipe Website</title>
-    <link rel="stylesheet" type="text/css" href="style.css">
+    <link rel="stylesheet" type="text/css" href="style.css" />
   </head>
   <body>
     <header>
-      <h1>Welcome to the Recipe Website</h1>
-      <ul>
-        <li><a href="#categories">Categories</a></li>
-      </ul>
+      <div class="header-content">
+        <h1>🍴 Recipe Book</h1>
+        <div class="header-actions">
+          <div class="search-wrapper">
+            <input
+              type="search"
+              id="search-input"
+              placeholder="Search recipes…"
+              aria-label="Search recipes"
+            />
+          </div>
+          <button id="btn-add-recipe" class="btn btn-primary">+ Add Recipe</button>
+        </div>
+      </div>
     </header>
-    <main>
-      <div id="categories">
+
+    <div class="layout">
+      <!-- Sidebar: categories -->
+      <aside id="sidebar">
         <h2>Categories</h2>
-        <ul id="category-list">
-        </ul>
+        <ul id="category-list" role="list"></ul>
+      </aside>
+
+      <!-- Main content area -->
+      <main id="main-content">
+        <!-- Recipe list view -->
+        <section id="view-list" class="view active">
+          <div class="view-header">
+            <h2 id="list-heading">All Recipes</h2>
+          </div>
+          <div id="recipe-cards" class="recipe-grid"></div>
+          <p id="no-recipes-msg" class="empty-msg hidden">No recipes found.</p>
+        </section>
+
+        <!-- Recipe detail view -->
+        <section id="view-detail" class="view hidden">
+          <button class="btn btn-back" id="btn-back">← Back</button>
+          <article id="recipe-detail"></article>
+        </section>
+      </main>
+    </div>
+
+    <!-- Add / Edit Recipe Modal -->
+    <div id="modal-overlay" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+      <div class="modal">
+        <h2 id="modal-title">Add Recipe</h2>
+        <form id="recipe-form" novalidate>
+          <input type="hidden" id="form-id" />
+
+          <label for="form-title">Title <span class="required">*</span></label>
+          <input type="text" id="form-title" placeholder="Recipe title" required />
+
+          <label for="form-description">Description</label>
+          <textarea id="form-description" rows="3" placeholder="A short description of the recipe"></textarea>
+
+          <label for="form-categories">Categories <span class="required">*</span> <small>(comma-separated)</small></label>
+          <input type="text" id="form-categories" placeholder="e.g. Breakfast, Vegetarian" required />
+
+          <label>Ingredients <span class="required">*</span></label>
+          <div id="ingredients-list" class="dynamic-list"></div>
+          <button type="button" class="btn btn-secondary" id="btn-add-ingredient">+ Add Ingredient</button>
+
+          <label>Steps <span class="required">*</span></label>
+          <div id="steps-list" class="dynamic-list"></div>
+          <button type="button" class="btn btn-secondary" id="btn-add-step">+ Add Step</button>
+
+          <label>Links <small>(optional)</small></label>
+          <div id="links-list" class="dynamic-list"></div>
+          <button type="button" class="btn btn-secondary" id="btn-add-link">+ Add Link</button>
+
+          <p id="form-error" class="form-error hidden" role="alert"></p>
+          <div class="form-actions">
+            <button type="submit" class="btn btn-primary" id="btn-save">Save Recipe</button>
+            <button type="button" class="btn btn-ghost" id="btn-cancel">Cancel</button>
+          </div>
+        </form>
       </div>
-      <div id="recipes">
+    </div>
+
+    <!-- Delete confirmation modal -->
+    <div id="delete-overlay" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="delete-title">
+      <div class="modal modal-sm">
+        <h2 id="delete-title">Delete Recipe</h2>
+        <p>Are you sure you want to delete <strong id="delete-recipe-name"></strong>? This cannot be undone.</p>
+        <div class="form-actions">
+          <button class="btn btn-danger" id="btn-confirm-delete">Delete</button>
+          <button class="btn btn-ghost" id="btn-cancel-delete">Cancel</button>
+        </div>
       </div>
-    </main>
+    </div>
+
     <footer>
-      <p>&copy; 2026 Recipe Website</p>
+      <p>&copy; 2026 Recipe Book</p>
     </footer>
+
     <script src="app.js"></script>
   </body>
 </html>
