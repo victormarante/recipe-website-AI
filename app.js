@@ -132,13 +132,12 @@ function renderCategories() {
 
   categoryList.innerHTML = '';
 
-  // "All" entry
+  // "← Categories" home link
   const allLi = document.createElement('li');
   const allA  = document.createElement('a');
   allA.href = '#';
-  allA.textContent = '🍽 All Recipes';
-  allA.className = state.activeCategory === null ? 'active' : '';
-  allA.addEventListener('click', e => { e.preventDefault(); selectCategory(null); });
+  allA.textContent = '← Categories';
+  allA.addEventListener('click', e => { e.preventDefault(); showCategoriesHome(); });
   allLi.appendChild(allA);
   categoryList.appendChild(allLi);
 
@@ -356,6 +355,18 @@ function showDetail(id) {
 // ── View switching ────────────────────────────────────────────────────────────
 
 function showView(name) {
+  const catHome      = $('#view-categories-home');
+  const recipeBrowser = $('#recipe-browser');
+
+  if (name === 'categories') {
+    catHome.classList.remove('hidden');
+    recipeBrowser.classList.add('hidden');
+    return;
+  }
+
+  catHome.classList.add('hidden');
+  recipeBrowser.classList.remove('hidden');
+
   viewList.classList.remove('active');
   viewList.classList.add('hidden');
   viewDetail.classList.remove('active');
@@ -377,6 +388,73 @@ function selectCategory(cat) {
   renderCategories();
   renderRecipeList();
   showView('list');
+}
+
+function showCategoriesHome() {
+  state.activeCategory = null;
+  state.searchQuery = '';
+  searchInput.value = '';
+  renderCategoryCards();
+  showView('categories');
+}
+
+function renderCategoryCards() {
+  const recipes = getRecipes();
+  const categories = getAllCategories(recipes);
+  const grid = $('#category-cards-grid');
+  const msg  = $('#no-categories-msg');
+  grid.innerHTML = '';
+
+  if (categories.length === 0) {
+    msg.classList.remove('hidden');
+    return;
+  }
+  msg.classList.add('hidden');
+
+  categories.forEach(cat => {
+    const catRecipes = recipes.filter(r =>
+      (r.categories || []).map(c => c.toLowerCase().trim()).includes(cat));
+
+    const card = document.createElement('div');
+    card.className = 'category-home-card';
+    card.addEventListener('click', () => selectCategory(cat));
+
+    const emoji = document.createElement('div');
+    emoji.className = 'cat-emoji';
+    emoji.textContent = getCategoryEmoji(cat);
+
+    const h3 = document.createElement('h3');
+    h3.textContent = capitalize(cat);
+
+    const count = document.createElement('p');
+    count.className = 'cat-count';
+    count.textContent = `${catRecipes.length} recipe${catRecipes.length !== 1 ? 's' : ''}`;
+
+    const preview = document.createElement('ul');
+    preview.className = 'cat-preview';
+    catRecipes.slice(0, 3).forEach(r => {
+      const li = document.createElement('li');
+      li.textContent = r.title;
+      preview.appendChild(li);
+    });
+
+    card.appendChild(emoji);
+    card.appendChild(h3);
+    card.appendChild(count);
+    card.appendChild(preview);
+    grid.appendChild(card);
+  });
+}
+
+function getCategoryEmoji(cat) {
+  const map = {
+    breakfast: '🍳', lunch: '🥙', dinner: '🍽', vegetarian: '🥦',
+    vegan: '🌱', dessert: '🍰', snack: '🍿', soup: '🍲',
+    pasta: '🍝', pizza: '🍕', salad: '🥗', meat: '🥩',
+    fish: '🐟', seafood: '🦐', baking: '🥖', bread: '🍞',
+    drinks: '🥤', cocktail: '🍹'
+  };
+  return map[cat.toLowerCase()] || '🍴';
 }
 
 // ── Modal: Add / Edit ─────────────────────────────────────────────────────────
@@ -595,6 +673,7 @@ function handleFormSubmit(e) {
   saveRecipes(recipes);
   closeModal();
   renderCategories();
+  renderCategoryCards();
   renderRecipeList();
 
   // If we edited the currently viewed detail, refresh it
@@ -624,6 +703,7 @@ function confirmDelete() {
   saveRecipes(recipes);
   closeDeleteModal();
   renderCategories();
+  renderCategoryCards();
   renderRecipeList();
   showView('list');
 }
@@ -662,10 +742,14 @@ function wireEvents() {
   // Search
   searchInput.addEventListener('input', () => {
     state.searchQuery = searchInput.value.trim();
-    state.activeCategory = null;
-    renderCategories();
-    renderRecipeList();
-    showView('list');
+    if (state.searchQuery) {
+      state.activeCategory = null;
+      renderCategories();
+      renderRecipeList();
+      showView('list');
+    } else {
+      showCategoriesHome();
+    }
   });
 }
 
@@ -675,8 +759,9 @@ function init() {
   seedIfEmpty();
   wireEvents();
   renderCategories();
+  renderCategoryCards();
   renderRecipeList();
-  showView('list');
+  showView('categories');
 }
 
 document.addEventListener('DOMContentLoaded', init);

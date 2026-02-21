@@ -24,7 +24,17 @@
       </div>
     </header>
 
-    <div class="layout">
+    <!-- Categories home (default landing view) -->
+    <section id="view-categories-home">
+      <div class="categories-home-inner">
+        <h2>Browse by Category</h2>
+        <div id="category-cards-grid" class="category-home-grid"></div>
+        <p id="no-categories-msg" class="empty-msg hidden">No categories yet. Add a recipe to get started!</p>
+      </div>
+    </section>
+
+    <!-- Recipe browser (shown after a category is selected) -->
+    <div class="layout hidden" id="recipe-browser">
       <!-- Sidebar: categories -->
       <aside id="sidebar">
         <h2>Categories</h2>
