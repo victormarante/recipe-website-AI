@@ -3,15 +3,27 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#6d28d9" />
     <title>Recipe Website</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet">
     <link rel="stylesheet" type="text/css" href="style.css" />
   </head>
   <body>
     <header>
       <div class="header-content">
-        <h1>🍴 Recipe Book</h1>
+        <button class="btn-icon menu-toggle" id="btn-menu-toggle" aria-label="Toggle menu" title="Menu">
+          <span class="material-icons-round">menu</span>
+        </button>
+        <h1>
+          <span class="material-icons-round">restaurant_menu</span>
+          Recipe Book
+        </h1>
         <div class="header-actions">
           <div class="search-wrapper">
+            <span class="material-icons-round search-icon">search</span>
             <input
               type="search"
               id="search-input"
@@ -19,10 +31,16 @@
               aria-label="Search recipes"
             />
           </div>
-          <button id="btn-add-recipe" class="btn btn-primary">+ Add Recipe</button>
+          <button id="btn-add-recipe" class="btn btn-primary">
+            <span class="material-icons-round">add</span>
+            <span class="btn-label">Add Recipe</span>
+          </button>
         </div>
       </div>
     </header>
+
+    <!-- Sidebar drawer overlay for mobile -->
+    <div id="drawer-overlay" class="drawer-overlay hidden"></div>
 
     <!-- Categories home (default landing view) -->
     <section id="view-categories-home">
@@ -54,11 +72,19 @@
 
         <!-- Recipe detail view -->
         <section id="view-detail" class="view hidden">
-          <button class="btn btn-back" id="btn-back">← Back</button>
+          <button class="btn btn-back" id="btn-back">
+            <span class="material-icons-round">arrow_back</span>
+            Back
+          </button>
           <article id="recipe-detail"></article>
         </section>
       </main>
     </div>
+
+    <!-- Floating Action Button (mobile) -->
+    <button id="fab-add" class="fab" aria-label="Add Recipe" title="Add Recipe">
+      <span class="material-icons-round">add</span>
+    </button>
 
     <!-- Add / Edit Recipe Modal -->
     <div id="modal-overlay" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="modal-title">
@@ -78,19 +104,27 @@
 
           <label>Ingredients <span class="required">*</span></label>
           <div id="ingredients-list" class="dynamic-list"></div>
-          <button type="button" class="btn btn-secondary" id="btn-add-ingredient">+ Add Ingredient</button>
+          <button type="button" class="btn btn-secondary" id="btn-add-ingredient">
+            <span class="material-icons-round">add</span> Add Ingredient
+          </button>
 
           <label>Steps <span class="required">*</span></label>
           <div id="steps-list" class="dynamic-list"></div>
-          <button type="button" class="btn btn-secondary" id="btn-add-step">+ Add Step</button>
+          <button type="button" class="btn btn-secondary" id="btn-add-step">
+            <span class="material-icons-round">add</span> Add Step
+          </button>
 
           <label>Links <small>(optional)</small></label>
           <div id="links-list" class="dynamic-list"></div>
-          <button type="button" class="btn btn-secondary" id="btn-add-link">+ Add Link</button>
+          <button type="button" class="btn btn-secondary" id="btn-add-link">
+            <span class="material-icons-round">add_link</span> Add Link
+          </button>
 
           <p id="form-error" class="form-error hidden" role="alert"></p>
           <div class="form-actions">
-            <button type="submit" class="btn btn-primary" id="btn-save">Save Recipe</button>
+            <button type="submit" class="btn btn-primary" id="btn-save">
+              <span class="material-icons-round">save</span> Save Recipe
+            </button>
             <button type="button" class="btn btn-ghost" id="btn-cancel">Cancel</button>
           </div>
         </form>
@@ -103,7 +137,9 @@
         <h2 id="delete-title">Delete Recipe</h2>
         <p>Are you sure you want to delete <strong id="delete-recipe-name"></strong>? This cannot be undone.</p>
         <div class="form-actions">
-          <button class="btn btn-danger" id="btn-confirm-delete">Delete</button>
+          <button class="btn btn-danger" id="btn-confirm-delete">
+            <span class="material-icons-round">delete</span> Delete
+          </button>
           <button class="btn btn-ghost" id="btn-cancel-delete">Cancel</button>
         </div>
       </div>
