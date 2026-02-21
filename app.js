@@ -116,6 +116,18 @@ const modalOverlay  = $('#modal-overlay');
 const deleteOverlay = $('#delete-overlay');
 const recipeForm    = $('#recipe-form');
 
+// ── Icon helper (uses inline SVG sprite, no external font) ────────────────────
+
+function icon(name) {
+  const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+  svg.setAttribute('aria-hidden', 'true');
+  svg.classList.add('md-icon');
+  const use = document.createElementNS('http://www.w3.org/2000/svg', 'use');
+  use.setAttribute('href', `#icon-${name}`);
+  svg.appendChild(use);
+  return svg;
+}
+
 // ── Category helpers ──────────────────────────────────────────────────────────
 
 function getAllCategories(recipes) {
@@ -221,13 +233,13 @@ function buildCard(recipe) {
   const editBtn = document.createElement('button');
   editBtn.className = 'btn-icon';
   editBtn.title = 'Edit recipe';
-  editBtn.innerHTML = '<span class="material-icons-round">edit</span>';
+  editBtn.appendChild(icon('edit'));
   editBtn.addEventListener('click', e => { e.stopPropagation(); openEditModal(recipe.id); });
 
   const delBtn = document.createElement('button');
   delBtn.className = 'btn-icon';
   delBtn.title = 'Delete recipe';
-  delBtn.innerHTML = '<span class="material-icons-round">delete</span>';
+  delBtn.appendChild(icon('delete'));
   delBtn.addEventListener('click', e => { e.stopPropagation(); openDeleteModal(recipe.id); });
 
   actions.appendChild(editBtn);
@@ -268,11 +280,13 @@ function showDetail(id) {
   detailActions.className = 'detail-actions';
   const editBtn = document.createElement('button');
   editBtn.className = 'btn btn-secondary';
-  editBtn.innerHTML = '<span class="material-icons-round">edit</span> Edit';
+  editBtn.appendChild(icon('edit'));
+  editBtn.appendChild(document.createTextNode(' Edit'));
   editBtn.addEventListener('click', () => openEditModal(recipe.id));
   const delBtn = document.createElement('button');
   delBtn.className = 'btn btn-danger';
-  delBtn.innerHTML = '<span class="material-icons-round">delete</span> Delete';
+  delBtn.appendChild(icon('delete'));
+  delBtn.appendChild(document.createTextNode(' Delete'));
   delBtn.addEventListener('click', () => openDeleteModal(recipe.id));
   detailActions.appendChild(editBtn);
   detailActions.appendChild(delBtn);
@@ -327,12 +341,9 @@ function showDetail(id) {
 
     links.forEach(link => {
       const a = document.createElement('a');
-      const icon = document.createElement('span');
-      icon.className = 'material-icons-round';
       if (link.type === 'recipe') {
         const linked = recipes.find(r => r.id === link.id);
-        icon.textContent = 'link';
-        a.appendChild(icon);
+        a.appendChild(icon('link'));
         a.appendChild(document.createTextNode(' ' + (linked ? linked.title : 'Unknown recipe')));
         a.href = '#';
         a.addEventListener('click', e => {
@@ -340,8 +351,7 @@ function showDetail(id) {
           if (linked) showDetail(linked.id);
         });
       } else {
-        icon.textContent = 'public';
-        a.appendChild(icon);
+        a.appendChild(icon('public'));
         a.appendChild(document.createTextNode(' ' + (link.label || link.url)));
         a.href = link.url;
         a.target = '_blank';
@@ -563,7 +573,7 @@ function addLinkRow(link = {}) {
   removeBtn.type = 'button';
   removeBtn.className = 'btn-icon';
   removeBtn.title = 'Remove';
-  removeBtn.innerHTML = '<span class="material-icons-round">close</span>';
+  removeBtn.appendChild(icon('close'));
   removeBtn.addEventListener('click', () => row.remove());
 
   row.appendChild(typeSelect);
@@ -586,7 +596,7 @@ function buildTextRow(value, placeholder, onRemove) {
   removeBtn.type = 'button';
   removeBtn.className = 'btn-icon';
   removeBtn.title = 'Remove';
-  removeBtn.innerHTML = '<span class="material-icons-round">close</span>';
+  removeBtn.appendChild(icon('close'));
   removeBtn.addEventListener('click', onRemove);
 
   row.appendChild(input);
