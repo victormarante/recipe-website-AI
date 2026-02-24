@@ -8,6 +8,8 @@
 // ── Storage helpers ──────────────────────────────────────────────────────────
 
 const STORAGE_KEY = 'recipeWebsiteData';
+const AUTH_KEY = 'recipeWebsiteUsers';
+const SESSION_KEY = 'recipeWebsiteSession';
 
 function loadData() {
   try {
@@ -33,6 +35,53 @@ function generateId() {
   return Date.now().toString(36) + Math.random().toString(36).slice(2);
 }
 
+// ── Auth helpers ──────────────────────────────────────────────────────────────
+
+function getUsers() {
+  try {
+    const raw = localStorage.getItem(AUTH_KEY);
+    if (raw) return JSON.parse(raw);
+  } catch (_) {}
+  return [];
+}
+
+async function hashPassword(pwd, salt) {
+  const enc = new TextEncoder();
+  const buf = await crypto.subtle.digest('SHA-256', enc.encode(salt + pwd));
+  return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, '0')).join('');
+}
+
+async function initUsers() {
+  if (getUsers().length === 0) {
+    const salt = crypto.randomUUID();
+    const hash = await hashPassword('admin', salt);
+    localStorage.setItem(AUTH_KEY, JSON.stringify([{ username: 'admin', passwordHash: hash, salt }]));
+  }
+}
+
+function isLoggedIn() {
+  return !!localStorage.getItem(SESSION_KEY);
+}
+
+async function handleLoginSubmit(e) {
+  e.preventDefault();
+  const username = $('#login-username').value.trim();
+  const password = $('#login-password').value;
+  const errorEl = $('#login-error');
+  const users = getUsers();
+  const user = users.find(u => u.username === username);
+  if (user) {
+    const hash = await hashPassword(password, user.salt || '');
+    if (hash === user.passwordHash) {
+      localStorage.setItem(SESSION_KEY, username);
+      $('#login-overlay').classList.add('hidden');
+      errorEl.classList.add('hidden');
+      return;
+    }
+  }
+  errorEl.classList.remove('hidden');
+}
+
 // ── Seed data (runs only on first visit) ─────────────────────────────────────
 
 function seedIfEmpty() {
@@ -43,6 +92,7 @@ function seedIfEmpty() {
       title: 'Classic Pancakes',
       description: 'Fluffy, golden pancakes perfect for a weekend breakfast.',
       categories: ['breakfast', 'vegetarian'],
+      tags: ['fluffy', 'quick', 'weekend'],
       ingredients: ['1 cup all-purpose flour', '2 tbsp sugar', '1 tsp baking powder',
         '½ tsp salt', '1 cup milk', '1 egg', '2 tbsp melted butter'],
       steps: [
@@ -61,6 +111,7 @@ function seedIfEmpty() {
       title: 'Simple Tomato Pasta',
       description: 'A quick weeknight pasta with a rich, garlicky tomato sauce.',
       categories: ['dinner', 'vegetarian'],
+      tags: ['quick', 'weeknight', 'italian'],
       ingredients: ['400 g spaghetti', '3 tbsp olive oil', '4 garlic cloves, minced',
         '1 can (400 g) crushed tomatoes', 'Salt and pepper', 'Fresh basil', 'Parmesan (optional)'],
       steps: [
@@ -76,6 +127,7 @@ function seedIfEmpty() {
       title: 'Avocado Toast',
       description: 'Creamy avocado on toasted bread, with toppings of your choice.',
       categories: ['breakfast', 'lunch', 'vegetarian'],
+      tags: ['healthy', 'easy', 'vegan-option'],
       ingredients: ['2 slices thick bread', '1 ripe avocado', 'Juice of ½ lemon',
         'Salt, pepper, chilli flakes', 'Optional: poached egg, cherry tomatoes'],
       steps: [
@@ -179,7 +231,8 @@ function getFilteredRecipes() {
       r.title.toLowerCase().includes(q) ||
       (r.description || '').toLowerCase().includes(q) ||
       (r.categories || []).some(c => c.toLowerCase().includes(q)) ||
-      (r.ingredients || []).some(i => i.toLowerCase().includes(q))
+      (r.ingredients || []).some(i => i.toLowerCase().includes(q)) ||
+      (r.tags || []).some(t => t.toLowerCase().includes(q))
     );
   }
 
@@ -325,6 +378,20 @@ function showDetail(id) {
 
   recipeDetail.appendChild(h2);
   recipeDetail.appendChild(meta);
+
+  // tags
+  if ((recipe.tags || []).length > 0) {
+    const tagsDiv = document.createElement('div');
+    tagsDiv.className = 'detail-tags';
+    (recipe.tags || []).forEach(t => {
+      const span = document.createElement('span');
+      span.className = 'tag-label';
+      span.textContent = '#' + t;
+      tagsDiv.appendChild(span);
+    });
+    recipeDetail.appendChild(tagsDiv);
+  }
+
   recipeDetail.appendChild(detailActions);
   recipeDetail.appendChild(descSection);
   recipeDetail.appendChild(ingSection);
@@ -499,6 +566,7 @@ function openEditModal(id) {
   $('#form-title').value = recipe.title;
   $('#form-description').value = recipe.description || '';
   $('#form-categories').value = (recipe.categories || []).join(', ');
+  $('#form-tags').value = (recipe.tags || []).join(', ');
 
   clearDynamicList('ingredients-list');
   (recipe.ingredients || []).forEach(ing => addIngredientRow(ing));
@@ -551,11 +619,31 @@ function addLinkRow(link = {}) {
   });
   typeSelect.value = link.type || 'external';
 
+  // Datalist for recipe suggestions
+  const dlId = 'dl-' + generateId();
+  const datalist = document.createElement('datalist');
+  datalist.id = dlId;
+
   const urlInput = document.createElement('input');
   urlInput.type = 'text';
   urlInput.className = 'link-url';
-  urlInput.placeholder = 'URL or recipe ID';
-  urlInput.value = link.url || link.id || '';
+
+  // For recipe type: show title; for external: show URL
+  if (link.type === 'recipe') {
+    const allRecipes = getRecipes();
+    const linked = allRecipes.find(r => r.id === link.id);
+    urlInput.value = linked ? linked.title : '';
+    urlInput.placeholder = 'Type recipe name…';
+    urlInput.setAttribute('list', dlId);
+    allRecipes.forEach(r => {
+      const opt = document.createElement('option');
+      opt.value = r.title;
+      datalist.appendChild(opt);
+    });
+  } else {
+    urlInput.value = link.url || '';
+    urlInput.placeholder = 'URL';
+  }
 
   const labelInput = document.createElement('input');
   labelInput.type = 'text';
@@ -564,8 +652,22 @@ function addLinkRow(link = {}) {
   labelInput.value = link.label || '';
 
   typeSelect.addEventListener('change', () => {
-    urlInput.placeholder = typeSelect.value === 'recipe' ? 'Recipe title search' : 'URL';
-    labelInput.style.display = typeSelect.value === 'recipe' ? 'none' : '';
+    if (typeSelect.value === 'recipe') {
+      urlInput.placeholder = 'Type recipe name…';
+      urlInput.value = '';
+      datalist.innerHTML = '';
+      getRecipes().forEach(r => {
+        const opt = document.createElement('option');
+        opt.value = r.title;
+        datalist.appendChild(opt);
+      });
+      urlInput.setAttribute('list', dlId);
+      labelInput.style.display = 'none';
+    } else {
+      urlInput.placeholder = 'URL';
+      urlInput.removeAttribute('list');
+      labelInput.style.display = '';
+    }
   });
   if (link.type === 'recipe') labelInput.style.display = 'none';
 
@@ -578,6 +680,7 @@ function addLinkRow(link = {}) {
 
   row.appendChild(typeSelect);
   row.appendChild(urlInput);
+  row.appendChild(datalist);
   row.appendChild(labelInput);
   row.appendChild(removeBtn);
   list.appendChild(row);
@@ -652,6 +755,9 @@ function handleFormSubmit(e) {
     .split(',').map(c => c.trim().toLowerCase()).filter(Boolean);
   if (categories.length === 0) { showFormError('Please enter at least one category.'); $('#form-categories').focus(); return; }
 
+  const tags = ($('#form-tags').value || '')
+    .split(',').map(t => t.trim().toLowerCase()).filter(Boolean);
+
   const ingredients = collectDynamicValues('ingredients-list');
   if (ingredients.length === 0) { showFormError('Please add at least one ingredient.'); return; }
 
@@ -670,6 +776,7 @@ function handleFormSubmit(e) {
         title,
         description: $('#form-description').value.trim(),
         categories,
+        tags,
         ingredients,
         steps,
         links
@@ -681,6 +788,7 @@ function handleFormSubmit(e) {
       title,
       description: $('#form-description').value.trim(),
       categories,
+      tags,
       ingredients,
       steps,
       links
@@ -702,22 +810,46 @@ function handleFormSubmit(e) {
 // ── Modal: Delete ─────────────────────────────────────────────────────────────
 
 function openDeleteModal(id) {
-  const recipe = getRecipes().find(r => r.id === id);
+  const recipes = getRecipes();
+  const recipe = recipes.find(r => r.id === id);
   if (!recipe) return;
   state.pendingDeleteId = id;
   $('#delete-recipe-name').textContent = recipe.title;
+
+  const linkedBy = recipes.filter(r =>
+    r.id !== id && (r.links || []).some(l => l.type === 'recipe' && l.id === id)
+  );
+  const blockMsg = $('#delete-block-msg');
+  const confirmBtn = $('#btn-confirm-delete');
+  if (linkedBy.length > 0) {
+    blockMsg.textContent = `Cannot delete: linked by ${linkedBy.map(r => r.title).join(', ')}`;
+    blockMsg.classList.remove('hidden');
+    confirmBtn.disabled = true;
+  } else {
+    blockMsg.classList.add('hidden');
+    confirmBtn.disabled = false;
+  }
+
   deleteOverlay.classList.remove('hidden');
 }
 
 function closeDeleteModal() {
   state.pendingDeleteId = null;
+  $('#btn-confirm-delete').disabled = false;
+  $('#delete-block-msg').classList.add('hidden');
   deleteOverlay.classList.add('hidden');
 }
 
 function confirmDelete() {
   if (!state.pendingDeleteId) return;
-  const recipes = getRecipes().filter(r => r.id !== state.pendingDeleteId);
-  saveRecipes(recipes);
+  const recipes = getRecipes();
+  const linkedBy = recipes.filter(r =>
+    r.id !== state.pendingDeleteId &&
+    (r.links || []).some(l => l.type === 'recipe' && l.id === state.pendingDeleteId)
+  );
+  if (linkedBy.length > 0) return;
+  const updated = recipes.filter(r => r.id !== state.pendingDeleteId);
+  saveRecipes(updated);
   closeDeleteModal();
   renderCategories();
   renderCategoryCards();
@@ -734,6 +866,13 @@ function capitalize(str) {
 // ── Event wiring ──────────────────────────────────────────────────────────────
 
 function wireEvents() {
+  $('#logo').addEventListener('click', showCategoriesHome);
+  $('#btn-logout').addEventListener('click', () => {
+    localStorage.removeItem(SESSION_KEY);
+    location.reload();
+  });
+  $('#login-form').addEventListener('submit', handleLoginSubmit);
+
   $('#btn-add-recipe').addEventListener('click', openAddModal);
   $('#btn-cancel').addEventListener('click', closeModal);
   recipeForm.addEventListener('submit', handleFormSubmit);
@@ -793,13 +932,17 @@ function closeSidebar() {
 
 // ── Bootstrap ─────────────────────────────────────────────────────────────────
 
-function init() {
+async function init() {
+  await initUsers();
   seedIfEmpty();
   wireEvents();
   renderCategories();
   renderCategoryCards();
   renderRecipeList();
   showView('categories');
+  if (isLoggedIn()) {
+    $('#login-overlay').classList.add('hidden');
+  }
 }
 
-document.addEventListener('DOMContentLoaded', init);
+document.addEventListener('DOMContentLoaded', () => init());
