@@ -1,0 +1,36 @@
+# Root-level .gitignore
+# Covers both frontend and backend
+
+# General
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Frontend
+frontend/node_modules/
+frontend/dist/
+frontend/.env.local
+
+# Backend
+backend/bin/
+backend/obj/
+backend/coverage.out
+backend/recipes.db
+backend/.env
+backend/api
+backend/api.exe
+backend/vendor/
+
+# IDE
+.vscode
+.idea
+*.iml
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
