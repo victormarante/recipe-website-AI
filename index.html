@@ -33,7 +33,7 @@
         <button class="btn-icon menu-toggle" id="btn-menu-toggle" aria-label="Toggle menu" title="Menu">
           <svg class="md-icon" aria-hidden="true"><use href="#icon-menu"/></svg>
         </button>
-        <h1>🍽 Marellis</h1>
+        <h1 id="logo">🍽 Marellis</h1>
         <div class="header-actions">
           <div class="search-wrapper">
             <svg class="md-icon search-icon" aria-hidden="true"><use href="#icon-search"/></svg>
@@ -48,6 +48,7 @@
             <svg class="md-icon" aria-hidden="true"><use href="#icon-add"/></svg>
             <span class="btn-label">Add Recipe</span>
           </button>
+          <button id="btn-logout" class="btn btn-ghost btn-logout-header">Log out</button>
         </div>
       </div>
     </header>
@@ -115,6 +116,9 @@
           <label for="form-categories">Categories <span class="required">*</span> <small>(comma-separated)</small></label>
           <input type="text" id="form-categories" placeholder="e.g. Breakfast, Vegetarian" required />
 
+          <label for="form-tags">Tags <small>(comma-separated, searchable)</small></label>
+          <input type="text" id="form-tags" placeholder="e.g. quick, spicy, comfort-food" />
+
           <label>Ingredients <span class="required">*</span></label>
           <div id="ingredients-list" class="dynamic-list"></div>
           <button type="button" class="btn btn-secondary" id="btn-add-ingredient">
@@ -149,6 +153,7 @@
       <div class="modal modal-sm">
         <h2 id="delete-title">Delete Recipe</h2>
         <p>Are you sure you want to delete <strong id="delete-recipe-name"></strong>? This cannot be undone.</p>
+        <p id="delete-block-msg" class="form-error hidden" role="alert"></p>
         <div class="form-actions">
           <button class="btn btn-danger" id="btn-confirm-delete">
             <svg class="md-icon" aria-hidden="true"><use href="#icon-delete"/></svg> Delete
@@ -161,6 +166,25 @@
     <footer>
       <p>&copy; 2026 Marellis</p>
     </footer>
+
+    <!-- Login overlay -->
+    <div id="login-overlay" class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="login-title">
+      <div class="modal modal-sm">
+        <h2 id="login-title">🍽 Marellis</h2>
+        <p class="login-subtitle">Sign in to continue</p>
+        <p class="login-hint">Default credentials: <strong>admin</strong> / <strong>admin</strong></p>
+        <form id="login-form" novalidate>
+          <label for="login-username">Username</label>
+          <input type="text" id="login-username" placeholder="Username" required autocomplete="username" />
+          <label for="login-password">Password</label>
+          <input type="password" id="login-password" placeholder="Password" required autocomplete="current-password" />
+          <p id="login-error" class="form-error hidden" role="alert">Incorrect username or password.</p>
+          <div class="form-actions">
+            <button type="submit" class="btn btn-primary" style="width:100%;justify-content:center">Sign In</button>
+          </div>
+        </form>
+      </div>
+    </div>
 
     <script src="app.js"></script>
   </body>
