@@ -113,6 +113,12 @@
           <label for="form-description">Description</label>
           <textarea id="form-description" rows="3" placeholder="A short description of the recipe"></textarea>
 
+          <label for="form-oven-temp">Oven Temperature <small>(optional)</small></label>
+          <div class="oven-temp-row">
+            <input type="number" id="form-oven-temp" placeholder="°C" min="0" max="500" />
+            <button type="button" class="btn btn-ghost" id="btn-convert-temp">from °F</button>
+          </div>
+
           <label for="form-categories">Categories <span class="required">*</span> <small>(comma-separated)</small></label>
           <input type="text" id="form-categories" placeholder="e.g. Breakfast, Vegetarian" required />
 

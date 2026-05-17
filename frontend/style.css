@@ -636,6 +636,41 @@ header h1 .md-icon { width: 1.6rem; height: 1.6rem; }
   flex-wrap: wrap;
 }
 
+.drag-handle {
+  cursor: grab;
+  padding: 0 4px;
+  color: var(--clr-muted);
+  user-select: none;
+  font-size: 1.1rem;
+  line-height: 1;
+  align-self: center;
+  flex-shrink: 0;
+}
+.drag-handle:active { cursor: grabbing; }
+.dynamic-item.drag-over { border-top: 2px solid var(--clr-primary); }
+
+.oven-temp-row {
+  display: flex;
+  gap: .5rem;
+  align-items: center;
+  margin-bottom: .5rem;
+}
+.oven-temp-row input[type="number"] {
+  width: 110px;
+  padding: .5rem .75rem;
+  border: 1.5px solid var(--clr-border);
+  border-radius: var(--radius-sm);
+  font-size: .88rem;
+  font-family: inherit;
+  outline: none;
+  transition: var(--transition);
+  color: var(--clr-text);
+}
+.oven-temp-row input[type="number"]:focus {
+  border-color: var(--clr-primary);
+  box-shadow: 0 0 0 3px rgba(124,58,237,.15);
+}
+
 /* ── Footer ───────────────────────────────────────── */
 footer {
   text-align: center;

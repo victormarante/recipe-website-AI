@@ -10,9 +10,10 @@ type Recipe struct {
 	Categories  []string  `json:"categories" db:"categories" validate:"required,min=1"`
 	Ingredients []string  `json:"ingredients" db:"ingredients" validate:"required,min=1"`
 	Steps       []string  `json:"steps" db:"steps" validate:"required,min=1"`
-	Links       []Link    `json:"links" db:"links"`
-	CreatedAt   time.Time `json:"created_at" db:"created_at"`
-	UpdatedAt   time.Time `json:"updated_at" db:"updated_at"`
+	Links           []Link    `json:"links" db:"links"`
+	OvenTemperature *int      `json:"oven_temperature" db:"oven_temperature"`
+	CreatedAt       time.Time `json:"created_at" db:"created_at"`
+	UpdatedAt       time.Time `json:"updated_at" db:"updated_at"`
 }
 
 // Link represents an external or recipe link
@@ -25,22 +26,24 @@ type Link struct {
 
 // CreateRecipeRequest represents the request body for creating a recipe
 type CreateRecipeRequest struct {
-	Title       string   `json:"title" validate:"required"`
-	Description string   `json:"description"`
-	Categories  []string `json:"categories" validate:"required,min=1"`
-	Ingredients []string `json:"ingredients" validate:"required,min=1"`
-	Steps       []string `json:"steps" validate:"required,min=1"`
-	Links       []Link   `json:"links"`
+	Title           string   `json:"title" validate:"required"`
+	Description     string   `json:"description"`
+	Categories      []string `json:"categories" validate:"required,min=1"`
+	Ingredients     []string `json:"ingredients" validate:"required,min=1"`
+	Steps           []string `json:"steps" validate:"required,min=1"`
+	Links           []Link   `json:"links"`
+	OvenTemperature *int     `json:"oven_temperature"`
 }
 
 // UpdateRecipeRequest represents the request body for updating a recipe
 type UpdateRecipeRequest struct {
-	Title       string   `json:"title" validate:"required"`
-	Description string   `json:"description"`
-	Categories  []string `json:"categories" validate:"required,min=1"`
-	Ingredients []string `json:"ingredients" validate:"required,min=1"`
-	Steps       []string `json:"steps" validate:"required,min=1"`
-	Links       []Link   `json:"links"`
+	Title           string   `json:"title" validate:"required"`
+	Description     string   `json:"description"`
+	Categories      []string `json:"categories" validate:"required,min=1"`
+	Ingredients     []string `json:"ingredients" validate:"required,min=1"`
+	Steps           []string `json:"steps" validate:"required,min=1"`
+	Links           []Link   `json:"links"`
+	OvenTemperature *int     `json:"oven_temperature"`
 }
 
 // ErrorResponse represents an error response

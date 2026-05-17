@@ -54,6 +54,23 @@ func RunMigrations(db *sqlx.DB, migrationPath string) error {
 	return nil
 }
 
+// AddColumnIfNotExists adds a column to a table only if it doesn't already exist.
+// Needed because SQLite does not support ALTER TABLE ... ADD COLUMN IF NOT EXISTS.
+func AddColumnIfNotExists(db *sqlx.DB, table, column, definition string) error {
+	var count int
+	if err := db.Get(&count, `SELECT COUNT(*) FROM pragma_table_info(?) WHERE name=?`, table, column); err != nil {
+		return fmt.Errorf("failed to check column existence: %w", err)
+	}
+	if count > 0 {
+		return nil
+	}
+	_, err := db.Exec(fmt.Sprintf("ALTER TABLE %s ADD COLUMN %s %s", table, column, definition))
+	if err != nil {
+		return fmt.Errorf("failed to add column %s: %w", column, err)
+	}
+	return nil
+}
+
 // Close closes the database connection
 func Close(db *sqlx.DB) error {
 	if db != nil {

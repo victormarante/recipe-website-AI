@@ -216,14 +216,16 @@ function showDetail(id) {
   const stepsSection = document.createElement('section');
   const stepsH3 = document.createElement('h3');
   stepsH3.textContent = 'Steps';
-  const stepsOl = document.createElement('ol');
-  (recipe.steps || []).forEach(step => {
+  const stepsUl = document.createElement('ul');
+  stepsUl.style.listStyle = 'none';
+  stepsUl.style.padding = '0';
+  (recipe.steps || []).forEach((step, i) => {
     const li = document.createElement('li');
-    li.textContent = step;
-    stepsOl.appendChild(li);
+    li.textContent = `Step ${i + 1}: ${step}`;
+    stepsUl.appendChild(li);
   });
   stepsSection.appendChild(stepsH3);
-  stepsSection.appendChild(stepsOl);
+  stepsSection.appendChild(stepsUl);
 
   recipeDetail.appendChild(h2);
   recipeDetail.appendChild(meta);
@@ -231,6 +233,17 @@ function showDetail(id) {
   recipeDetail.appendChild(descSection);
   recipeDetail.appendChild(ingSection);
   recipeDetail.appendChild(stepsSection);
+
+  if (recipe.oven_temperature != null) {
+    const ovenSection = document.createElement('section');
+    const ovenH3 = document.createElement('h3');
+    ovenH3.textContent = 'Oven Temperature';
+    const ovenP = document.createElement('p');
+    ovenP.textContent = `${recipe.oven_temperature}°C`;
+    ovenSection.appendChild(ovenH3);
+    ovenSection.appendChild(ovenP);
+    recipeDetail.appendChild(ovenSection);
+  }
 
   const links = recipe.links || [];
   if (links.length > 0) {
@@ -398,6 +411,7 @@ function openEditModal(id) {
   $('#form-id').value = id;
   $('#form-title').value = recipe.title;
   $('#form-description').value = recipe.description || '';
+  $('#form-oven-temp').value = recipe.oven_temperature ?? '';
   $('#form-categories').value = (recipe.categories || []).join(', ');
   $('#form-tags').value = '';
 
@@ -429,12 +443,14 @@ function addIngredientRow(value) {
   const list = document.getElementById('ingredients-list');
   const row = buildTextRow(value, 'Ingredient', () => row.remove());
   list.appendChild(row);
+  if (!value) row.querySelector('input').focus();
 }
 
 function addStepRow(value) {
   const list = document.getElementById('steps-list');
   const row = buildTextRow(value, 'Step description', () => row.remove());
   list.appendChild(row);
+  if (!value) row.querySelector('input').focus();
 }
 
 function addLinkRow(link = {}) {
@@ -516,9 +532,47 @@ function addLinkRow(link = {}) {
   list.appendChild(row);
 }
 
+let _dragSrc = null;
+function makeDraggable(list) {
+  list.addEventListener('dragstart', e => {
+    _dragSrc = e.target.closest('.dynamic-item');
+    e.dataTransfer.effectAllowed = 'move';
+  });
+  list.addEventListener('dragover', e => {
+    e.preventDefault();
+    const target = e.target.closest('.dynamic-item');
+    if (target && target !== _dragSrc) target.classList.add('drag-over');
+  });
+  list.addEventListener('dragleave', e => {
+    const target = e.target.closest('.dynamic-item');
+    if (target) target.classList.remove('drag-over');
+  });
+  list.addEventListener('drop', e => {
+    e.preventDefault();
+    const target = e.target.closest('.dynamic-item');
+    if (!target || target === _dragSrc) return;
+    target.classList.remove('drag-over');
+    const rect = target.getBoundingClientRect();
+    if (e.clientY < rect.top + rect.height / 2) {
+      list.insertBefore(_dragSrc, target);
+    } else {
+      list.insertBefore(_dragSrc, target.nextSibling);
+    }
+  });
+  list.addEventListener('dragend', () => {
+    list.querySelectorAll('.drag-over').forEach(el => el.classList.remove('drag-over'));
+  });
+}
+
 function buildTextRow(value, placeholder, onRemove) {
   const row = document.createElement('div');
   row.className = 'dynamic-item';
+  row.setAttribute('draggable', 'true');
+
+  const handle = document.createElement('span');
+  handle.className = 'drag-handle';
+  handle.textContent = '⠿';
+  handle.title = 'Drag to reorder';
 
   const input = document.createElement('input');
   input.type = 'text';
@@ -532,6 +586,7 @@ function buildTextRow(value, placeholder, onRemove) {
   removeBtn.appendChild(icon('close'));
   removeBtn.addEventListener('click', onRemove);
 
+  row.appendChild(handle);
   row.appendChild(input);
   row.appendChild(removeBtn);
   return row;
@@ -591,6 +646,7 @@ async function handleFormSubmit(e) {
 
   const links = collectLinks();
 
+  const ovenTempVal = $('#form-oven-temp').value;
   const recipeData = {
     title,
     description: $('#form-description').value.trim(),
@@ -598,6 +654,7 @@ async function handleFormSubmit(e) {
     ingredients,
     steps,
     links,
+    oven_temperature: ovenTempVal ? parseInt(ovenTempVal, 10) : null,
   };
 
   const editingId = state.editingId;
@@ -711,6 +768,14 @@ function wireEvents() {
   $('#btn-add-ingredient').addEventListener('click', () => addIngredientRow(''));
   $('#btn-add-step').addEventListener('click', () => addStepRow(''));
   $('#btn-add-link').addEventListener('click', () => addLinkRow());
+
+  $('#btn-convert-temp').addEventListener('click', () => {
+    const f = parseFloat($('#form-oven-temp').value);
+    if (!isNaN(f)) $('#form-oven-temp').value = Math.round((f - 32) * 5 / 9);
+  });
+
+  makeDraggable(document.getElementById('ingredients-list'));
+  makeDraggable(document.getElementById('steps-list'));
 
   $('#btn-back').addEventListener('click', () => showView('list'));
 
