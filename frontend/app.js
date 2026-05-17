@@ -184,14 +184,14 @@ function showDetail(id) {
   const detailActions = document.createElement('div');
   detailActions.className = 'detail-actions';
   const editBtn = document.createElement('button');
-  editBtn.className = 'btn btn-secondary';
+  editBtn.className = 'btn-icon';
+  editBtn.title = 'Edit recipe';
   editBtn.appendChild(icon('edit'));
-  editBtn.appendChild(document.createTextNode(' Edit'));
   editBtn.addEventListener('click', () => openEditModal(recipe.id));
   const delBtn = document.createElement('button');
-  delBtn.className = 'btn btn-danger';
+  delBtn.className = 'btn-icon';
+  delBtn.title = 'Delete recipe';
   delBtn.appendChild(icon('delete'));
-  delBtn.appendChild(document.createTextNode(' Delete'));
   delBtn.addEventListener('click', () => openDeleteModal(recipe.id));
   detailActions.appendChild(editBtn);
   detailActions.appendChild(delBtn);
@@ -227,9 +227,12 @@ function showDetail(id) {
   stepsSection.appendChild(stepsH3);
   stepsSection.appendChild(stepsUl);
 
-  recipeDetail.appendChild(h2);
+  const titleRow = document.createElement('div');
+  titleRow.className = 'detail-title-row';
+  titleRow.appendChild(h2);
+  titleRow.appendChild(detailActions);
+  recipeDetail.appendChild(titleRow);
   recipeDetail.appendChild(meta);
-  recipeDetail.appendChild(detailActions);
   recipeDetail.appendChild(descSection);
   recipeDetail.appendChild(ingSection);
   recipeDetail.appendChild(stepsSection);
@@ -764,6 +767,12 @@ function wireEvents() {
   $('#btn-add-recipe').addEventListener('click', openAddModal);
   $('#btn-cancel').addEventListener('click', closeModal);
   recipeForm.addEventListener('submit', handleFormSubmit);
+  recipeForm.addEventListener('keydown', e => {
+    if (e.key === 'Enter' && e.target.tagName === 'INPUT') {
+      e.preventDefault();
+      e.target.blur();
+    }
+  });
 
   $('#btn-add-ingredient').addEventListener('click', () => addIngredientRow(''));
   $('#btn-add-step').addEventListener('click', () => addStepRow(''));
