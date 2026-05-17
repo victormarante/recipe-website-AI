@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"fmt"
 	"io"
+	"log"
 	"net/http"
 	"strconv"
 	"strings"
@@ -57,15 +58,18 @@ func (h *RecipeHandler) UploadRecipeImage(w http.ResponseWriter, r *http.Request
 	}
 
 	key := fmt.Sprintf("recipes/%d", id)
+	log.Printf("info: uploading image to R2 bucket=%s key=%s size=%d type=%s", h.cfg.R2BucketName, key, len(imgBytes), contentType)
 	if _, err = h.s3Client.PutObject(r.Context(), &s3.PutObjectInput{
-		Bucket:      aws.String(h.cfg.R2BucketName),
-		Key:         aws.String(key),
-		Body:        bytes.NewReader(imgBytes),
-		ContentType: aws.String(contentType),
+		Bucket:        aws.String(h.cfg.R2BucketName),
+		Key:           aws.String(key),
+		Body:          bytes.NewReader(imgBytes),
+		ContentType:   aws.String(contentType),
+		ContentLength: aws.Int64(int64(len(imgBytes))),
 	}); err != nil {
 		h.sendError(w, http.StatusInternalServerError, "Failed to upload image", err)
 		return
 	}
+	log.Printf("info: image uploaded successfully key=%s", key)
 
 	imageURL := strings.TrimRight(h.cfg.R2PublicURL, "/") + "/" + key
 	if err := h.repo.UpdateImageURL(id, &imageURL); err != nil {
