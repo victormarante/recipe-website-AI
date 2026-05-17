@@ -143,6 +143,13 @@
             <svg class="md-icon" aria-hidden="true"><use href="#icon-add_link"/></svg> Add Link
           </button>
 
+          <label for="form-image">Photo <small>(optional, max 5 MB)</small></label>
+          <input type="file" id="form-image" accept="image/*" />
+          <div id="form-image-preview" class="form-image-preview hidden">
+            <img id="form-image-preview-img" src="" alt="Current photo" />
+            <button type="button" class="btn btn-ghost btn-sm" id="btn-remove-image">Remove photo</button>
+          </div>
+
           <p id="form-error" class="form-error hidden" role="alert"></p>
           <div class="form-actions">
             <button type="submit" class="btn btn-primary" id="btn-save">

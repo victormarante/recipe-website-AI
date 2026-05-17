@@ -8,6 +8,9 @@ primary_region = 'arn'
 
 [build]
 
+[env]
+  DATABASE_PATH = "/data/recipes.db"
+
 [[mounts]]
   source = "recipe_data"
   destination = "/data"

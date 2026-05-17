@@ -1,12 +1,19 @@
 package handlers
 
 import (
+	"context"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"strconv"
 
+	"github.com/aws/aws-sdk-go-v2/aws"
+	awsconfig "github.com/aws/aws-sdk-go-v2/config"
+	"github.com/aws/aws-sdk-go-v2/credentials"
+	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-playground/validator/v10"
+	"recipe-backend/internal/config"
 	"recipe-backend/internal/models"
 	"recipe-backend/internal/repository"
 )
@@ -15,14 +22,30 @@ import (
 type RecipeHandler struct {
 	repo     *repository.RecipeRepository
 	validate *validator.Validate
+	cfg      *config.Config
+	s3Client *s3.Client
 }
 
 // NewRecipeHandler creates a new RecipeHandler
-func NewRecipeHandler(repo *repository.RecipeRepository) *RecipeHandler {
-	return &RecipeHandler{
+func NewRecipeHandler(repo *repository.RecipeRepository, cfg *config.Config) *RecipeHandler {
+	h := &RecipeHandler{
 		repo:     repo,
 		validate: validator.New(),
+		cfg:      cfg,
 	}
+	if cfg.R2AccountID != "" && cfg.R2AccessKey != "" && cfg.R2SecretKey != "" {
+		awsCfg, err := awsconfig.LoadDefaultConfig(context.Background(),
+			awsconfig.WithRegion("auto"),
+			awsconfig.WithCredentialsProvider(credentials.NewStaticCredentialsProvider(cfg.R2AccessKey, cfg.R2SecretKey, "")),
+		)
+		if err == nil {
+			h.s3Client = s3.NewFromConfig(awsCfg, func(o *s3.Options) {
+				o.BaseEndpoint = aws.String(fmt.Sprintf("https://%s.r2.cloudflarestorage.com", cfg.R2AccountID))
+				o.UsePathStyle = true
+			})
+		}
+	}
+	return h
 }
 
 // GetRecipes handles GET /api/v1/recipes

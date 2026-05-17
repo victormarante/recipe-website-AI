@@ -8,6 +8,7 @@ let state = {
   searchQuery: '',
   editingId: null,
   pendingDeleteId: null,
+  pendingRemoveImage: false,
 };
 
 // ── DOM refs ─────────────────────────────────────────────────────────────────
@@ -233,6 +234,13 @@ function showDetail(id) {
   titleRow.appendChild(detailActions);
   recipeDetail.appendChild(titleRow);
   recipeDetail.appendChild(meta);
+  if (recipe.image_url) {
+    const img = document.createElement('img');
+    img.src = recipe.image_url;
+    img.alt = recipe.title;
+    img.className = 'recipe-photo';
+    recipeDetail.appendChild(img);
+  }
   recipeDetail.appendChild(descSection);
   recipeDetail.appendChild(ingSection);
   recipeDetail.appendChild(stepsSection);
@@ -394,6 +402,7 @@ function getCategoryEmoji(cat) {
 
 function openAddModal() {
   state.editingId = null;
+  state.pendingRemoveImage = false;
   $('#modal-title').textContent = 'Add Recipe';
   recipeForm.reset();
   $('#form-id').value = '';
@@ -402,6 +411,7 @@ function openAddModal() {
   clearDynamicList('links-list');
   addIngredientRow('');
   addStepRow('');
+  $('#form-image-preview').classList.add('hidden');
   modalOverlay.classList.remove('hidden');
   $('#form-title').focus();
 }
@@ -410,6 +420,7 @@ function openEditModal(id) {
   const recipe = state.recipes.find(r => r.id === id);
   if (!recipe) return;
   state.editingId = id;
+  state.pendingRemoveImage = false;
   $('#modal-title').textContent = 'Edit Recipe';
   $('#form-id').value = id;
   $('#form-title').value = recipe.title;
@@ -428,6 +439,16 @@ function openEditModal(id) {
 
   clearDynamicList('links-list');
   (recipe.links || []).forEach(link => addLinkRow(link));
+
+  const preview = $('#form-image-preview');
+  const previewImg = $('#form-image-preview-img');
+  if (recipe.image_url) {
+    previewImg.src = recipe.image_url;
+    preview.classList.remove('hidden');
+  } else {
+    preview.classList.add('hidden');
+  }
+  $('#form-image').value = '';
 
   modalOverlay.classList.remove('hidden');
   $('#form-title').focus();
@@ -663,15 +684,24 @@ async function handleFormSubmit(e) {
   const editingId = state.editingId;
 
   try {
+    let saved;
     if (editingId) {
-      await window.API.recipes.update(editingId, recipeData);
+      saved = await window.API.recipes.update(editingId, recipeData);
     } else {
-      await window.API.recipes.create(recipeData);
+      saved = await window.API.recipes.create(recipeData);
     }
+
+    const imageFile = $('#form-image').files[0];
+    if (imageFile) {
+      await window.API.recipes.uploadImage(saved.id, imageFile);
+    } else if (state.pendingRemoveImage) {
+      await window.API.recipes.deleteImage(saved.id);
+    }
+
     closeModal();
     await loadAndRender();
-    if (editingId && !viewDetail.classList.contains('hidden')) {
-      const updated = state.recipes.find(r => r.id === editingId);
+    if (!viewDetail.classList.contains('hidden') || !editingId) {
+      const updated = state.recipes.find(r => r.id === saved.id);
       if (updated) showDetail(updated.id);
     }
   } catch (err) {
@@ -777,6 +807,12 @@ function wireEvents() {
   $('#btn-add-ingredient').addEventListener('click', () => addIngredientRow(''));
   $('#btn-add-step').addEventListener('click', () => addStepRow(''));
   $('#btn-add-link').addEventListener('click', () => addLinkRow());
+
+  $('#btn-remove-image').addEventListener('click', () => {
+    state.pendingRemoveImage = true;
+    $('#form-image-preview').classList.add('hidden');
+    $('#form-image').value = '';
+  });
 
   $('#btn-convert-temp').addEventListener('click', () => {
     const f = parseFloat($('#form-oven-temp').value);
