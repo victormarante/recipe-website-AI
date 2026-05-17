@@ -4,9 +4,13 @@
 #
 
 app = 'recipe-website-ai'
-primary_region = 'ams'
+primary_region = 'arn'
 
 [build]
+
+[[mounts]]
+  source = "recipe_data"
+  destination = "/data"
 
 [http_service]
   internal_port = 8080
