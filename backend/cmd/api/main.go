@@ -29,6 +29,10 @@ func main() {
 		log.Fatalf("migrations: %v", err)
 	}
 
+	if err := database.AddColumnIfNotExists(db, "recipes", "oven_temperature", "INTEGER DEFAULT NULL"); err != nil {
+		log.Fatalf("migration: %v", err)
+	}
+
 	repo := repository.NewRecipeRepository(db)
 	recipeHandler := handlers.NewRecipeHandler(repo)
 	categoryHandler := handlers.NewCategoryHandler(repo)

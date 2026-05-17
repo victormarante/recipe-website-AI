@@ -194,6 +194,10 @@ Before large changes:
 - Main branch: `master`
 - Workflows trigger on push to `master`
 
+**Branching:**
+- Always create a new feature branch from `origin/master` before starting any feature or fix, unless explicitly instructed otherwise
+- Pull `origin/master` first to ensure the branch is up to date: `git fetch origin && git checkout -b feature/<name> origin/master`
+
 Before significant changes:
 - recommend a checkpoint commit
 
