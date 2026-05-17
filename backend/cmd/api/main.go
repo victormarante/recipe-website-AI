@@ -33,8 +33,12 @@ func main() {
 		log.Fatalf("migration: %v", err)
 	}
 
+	if err := database.AddColumnIfNotExists(db, "recipes", "image_url", "TEXT"); err != nil {
+		log.Fatalf("migration: %v", err)
+	}
+
 	repo := repository.NewRecipeRepository(db)
-	recipeHandler := handlers.NewRecipeHandler(repo)
+	recipeHandler := handlers.NewRecipeHandler(repo, cfg)
 	categoryHandler := handlers.NewCategoryHandler(repo)
 	authHandler := handlers.NewAuthHandler(cfg)
 

@@ -12,6 +12,7 @@ type Recipe struct {
 	Steps       []string  `json:"steps" db:"steps" validate:"required,min=1"`
 	Links           []Link    `json:"links" db:"links"`
 	OvenTemperature *int      `json:"oven_temperature" db:"oven_temperature"`
+	ImageURL        *string   `json:"image_url" db:"image_url"`
 	CreatedAt       time.Time `json:"created_at" db:"created_at"`
 	UpdatedAt       time.Time `json:"updated_at" db:"updated_at"`
 }

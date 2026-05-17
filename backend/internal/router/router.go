@@ -54,6 +54,8 @@ func New(
 			r.Get("/recipes/{id}", recipeHandler.GetRecipe)
 			r.Put("/recipes/{id}", recipeHandler.UpdateRecipe)
 			r.Delete("/recipes/{id}", recipeHandler.DeleteRecipe)
+			r.Post("/recipes/{id}/image", recipeHandler.UploadRecipeImage)
+			r.Delete("/recipes/{id}/image", recipeHandler.DeleteRecipeImage)
 
 			r.Get("/categories", categoryHandler.GetCategories)
 		})

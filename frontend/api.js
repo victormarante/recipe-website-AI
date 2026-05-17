@@ -131,6 +131,27 @@ const RecipeAPI = {
   async delete(id) {
     return request(`/recipes/${id}`, { method: 'DELETE' });
   },
+
+  async uploadImage(id, file) {
+    const url = `${API_BASE_URL}${API_VERSION}/recipes/${id}/image`;
+    const token = getToken();
+    const form = new FormData();
+    form.append('image', file);
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+      body: form,
+    });
+    if (!response.ok) {
+      const data = await response.json().catch(() => ({}));
+      throw new APIError(data.error || 'Upload failed', response.status, data);
+    }
+    return response.json();
+  },
+
+  async deleteImage(id) {
+    return request(`/recipes/${id}/image`, { method: 'DELETE' });
+  },
 };
 
 // ── Category API ───────────────────────────────────────────────────────────────
