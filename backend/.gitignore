@@ -5,7 +5,8 @@
 *.so
 *.dylib
 recipe-backend
-api
+/api
+/bin/
 
 # Test binary
 *.test

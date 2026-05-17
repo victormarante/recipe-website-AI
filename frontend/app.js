@@ -1,154 +1,13 @@
-/**
- * Recipe Website – app.js
- * Uses localStorage to persist recipes as JSON.
- */
-
 'use strict';
-
-// ── Storage helpers ──────────────────────────────────────────────────────────
-
-const STORAGE_KEY = 'recipeWebsiteData';
-const AUTH_KEY = 'recipeWebsiteUsers';
-const SESSION_KEY = 'recipeWebsiteSession';
-
-function loadData() {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (raw) return JSON.parse(raw);
-  } catch (_) {}
-  return { recipes: [] };
-}
-
-function saveData(data) {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
-}
-
-function getRecipes() {
-  return loadData().recipes;
-}
-
-function saveRecipes(recipes) {
-  saveData({ recipes });
-}
-
-function generateId() {
-  return Date.now().toString(36) + Math.random().toString(36).slice(2);
-}
-
-// ── Auth helpers ──────────────────────────────────────────────────────────────
-
-function getUsers() {
-  try {
-    const raw = localStorage.getItem(AUTH_KEY);
-    if (raw) return JSON.parse(raw);
-  } catch (_) {}
-  return [];
-}
-
-async function hashPassword(pwd, salt) {
-  const enc = new TextEncoder();
-  const buf = await crypto.subtle.digest('SHA-256', enc.encode(salt + pwd));
-  return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, '0')).join('');
-}
-
-async function initUsers() {
-  if (getUsers().length === 0) {
-    const salt = crypto.randomUUID();
-    const hash = await hashPassword('admin', salt);
-    localStorage.setItem(AUTH_KEY, JSON.stringify([{ username: 'admin', passwordHash: hash, salt }]));
-  }
-}
-
-function isLoggedIn() {
-  return !!localStorage.getItem(SESSION_KEY);
-}
-
-async function handleLoginSubmit(e) {
-  e.preventDefault();
-  const username = $('#login-username').value.trim();
-  const password = $('#login-password').value;
-  const errorEl = $('#login-error');
-  const users = getUsers();
-  const user = users.find(u => u.username === username);
-  if (user) {
-    const hash = await hashPassword(password, user.salt || '');
-    if (hash === user.passwordHash) {
-      localStorage.setItem(SESSION_KEY, username);
-      $('#login-overlay').classList.add('hidden');
-      errorEl.classList.add('hidden');
-      return;
-    }
-  }
-  errorEl.classList.remove('hidden');
-}
-
-// ── Seed data (runs only on first visit) ─────────────────────────────────────
-
-function seedIfEmpty() {
-  if (getRecipes().length > 0) return;
-  const seed = [
-    {
-      id: generateId(),
-      title: 'Classic Pancakes',
-      description: 'Fluffy, golden pancakes perfect for a weekend breakfast.',
-      categories: ['breakfast', 'vegetarian'],
-      tags: ['fluffy', 'quick', 'weekend'],
-      ingredients: ['1 cup all-purpose flour', '2 tbsp sugar', '1 tsp baking powder',
-        '½ tsp salt', '1 cup milk', '1 egg', '2 tbsp melted butter'],
-      steps: [
-        'Whisk together flour, sugar, baking powder, and salt in a large bowl.',
-        'In another bowl, beat milk, egg, and melted butter together.',
-        'Pour wet ingredients into dry ingredients and stir until just combined (lumps are fine).',
-        'Heat a non-stick pan over medium heat and lightly grease with butter.',
-        'Pour ¼ cup of batter per pancake and cook until bubbles form (~2 min), then flip.',
-        'Serve with maple syrup and fresh fruit.'],
-      links: [
-        { type: 'external', url: 'https://en.wikipedia.org/wiki/Pancake', label: 'About Pancakes' }
-      ]
-    },
-    {
-      id: generateId(),
-      title: 'Simple Tomato Pasta',
-      description: 'A quick weeknight pasta with a rich, garlicky tomato sauce.',
-      categories: ['dinner', 'vegetarian'],
-      tags: ['quick', 'weeknight', 'italian'],
-      ingredients: ['400 g spaghetti', '3 tbsp olive oil', '4 garlic cloves, minced',
-        '1 can (400 g) crushed tomatoes', 'Salt and pepper', 'Fresh basil', 'Parmesan (optional)'],
-      steps: [
-        'Cook spaghetti according to package directions; reserve ½ cup pasta water.',
-        'Heat olive oil in a large pan over medium heat. Add garlic and cook 1 minute.',
-        'Add crushed tomatoes, season with salt and pepper, and simmer 10 minutes.',
-        'Toss pasta with sauce, adding pasta water to loosen if needed.',
-        'Serve topped with fresh basil and grated Parmesan.'],
-      links: []
-    },
-    {
-      id: generateId(),
-      title: 'Avocado Toast',
-      description: 'Creamy avocado on toasted bread, with toppings of your choice.',
-      categories: ['breakfast', 'lunch', 'vegetarian'],
-      tags: ['healthy', 'easy', 'vegan-option'],
-      ingredients: ['2 slices thick bread', '1 ripe avocado', 'Juice of ½ lemon',
-        'Salt, pepper, chilli flakes', 'Optional: poached egg, cherry tomatoes'],
-      steps: [
-        'Toast bread until golden and crisp.',
-        'Halve avocado, remove pit, and scoop flesh into a bowl.',
-        'Mash avocado with lemon juice, salt, and pepper.',
-        'Spread avocado mixture on toast.',
-        'Top with chilli flakes and any optional toppings.'],
-      links: []
-    }
-  ];
-  saveRecipes(seed);
-}
 
 // ── State ────────────────────────────────────────────────────────────────────
 
 let state = {
-  activeCategory: null,   // null = all
+  recipes: [],
+  activeCategory: null,
   searchQuery: '',
-  editingId: null,        // recipe id being edited, or null for new
-  pendingDeleteId: null
+  editingId: null,
+  pendingDeleteId: null,
 };
 
 // ── DOM refs ─────────────────────────────────────────────────────────────────
@@ -168,7 +27,7 @@ const modalOverlay  = $('#modal-overlay');
 const deleteOverlay = $('#delete-overlay');
 const recipeForm    = $('#recipe-form');
 
-// ── Icon helper (uses inline SVG sprite, no external font) ────────────────────
+// ── Icon helper ───────────────────────────────────────────────────────────────
 
 function icon(name) {
   const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
@@ -191,12 +50,10 @@ function getAllCategories(recipes) {
 // ── Rendering ─────────────────────────────────────────────────────────────────
 
 function renderCategories() {
-  const recipes = getRecipes();
-  const categories = getAllCategories(recipes);
+  const categories = getAllCategories(state.recipes);
 
   categoryList.innerHTML = '';
 
-  // "← Categories" home link
   const allLi = document.createElement('li');
   const allA  = document.createElement('a');
   allA.href = '#';
@@ -218,7 +75,7 @@ function renderCategories() {
 }
 
 function getFilteredRecipes() {
-  let recipes = getRecipes();
+  let recipes = state.recipes;
 
   if (state.activeCategory) {
     recipes = recipes.filter(r =>
@@ -231,8 +88,7 @@ function getFilteredRecipes() {
       r.title.toLowerCase().includes(q) ||
       (r.description || '').toLowerCase().includes(q) ||
       (r.categories || []).some(c => c.toLowerCase().includes(q)) ||
-      (r.ingredients || []).some(i => i.toLowerCase().includes(q)) ||
-      (r.tags || []).some(t => t.toLowerCase().includes(q))
+      (r.ingredients || []).some(i => i.toLowerCase().includes(q))
     );
   }
 
@@ -250,7 +106,6 @@ function renderRecipeList() {
     recipes.forEach(r => recipeCards.appendChild(buildCard(r)));
   }
 
-  // heading
   if (state.searchQuery) {
     listHeading.textContent = `Search: "${state.searchQuery}"`;
   } else if (state.activeCategory) {
@@ -309,8 +164,7 @@ function buildCard(recipe) {
 }
 
 function showDetail(id) {
-  const recipes = getRecipes();
-  const recipe = recipes.find(r => r.id === id);
+  const recipe = state.recipes.find(r => r.id === id);
   if (!recipe) return;
 
   recipeDetail.innerHTML = '';
@@ -318,7 +172,6 @@ function showDetail(id) {
   const h2 = document.createElement('h2');
   h2.textContent = recipe.title;
 
-  // categories
   const meta = document.createElement('div');
   meta.className = 'detail-meta';
   (recipe.categories || []).forEach(c => {
@@ -328,7 +181,6 @@ function showDetail(id) {
     meta.appendChild(span);
   });
 
-  // actions
   const detailActions = document.createElement('div');
   detailActions.className = 'detail-actions';
   const editBtn = document.createElement('button');
@@ -344,13 +196,11 @@ function showDetail(id) {
   detailActions.appendChild(editBtn);
   detailActions.appendChild(delBtn);
 
-  // description
   const descSection = document.createElement('section');
   const descP = document.createElement('p');
   descP.textContent = recipe.description || '';
   descSection.appendChild(descP);
 
-  // ingredients
   const ingSection = document.createElement('section');
   const ingH3 = document.createElement('h3');
   ingH3.textContent = 'Ingredients';
@@ -363,7 +213,6 @@ function showDetail(id) {
   ingSection.appendChild(ingH3);
   ingSection.appendChild(ingUl);
 
-  // steps
   const stepsSection = document.createElement('section');
   const stepsH3 = document.createElement('h3');
   stepsH3.textContent = 'Steps';
@@ -378,26 +227,11 @@ function showDetail(id) {
 
   recipeDetail.appendChild(h2);
   recipeDetail.appendChild(meta);
-
-  // tags
-  if ((recipe.tags || []).length > 0) {
-    const tagsDiv = document.createElement('div');
-    tagsDiv.className = 'detail-tags';
-    (recipe.tags || []).forEach(t => {
-      const span = document.createElement('span');
-      span.className = 'tag-label';
-      span.textContent = '#' + t;
-      tagsDiv.appendChild(span);
-    });
-    recipeDetail.appendChild(tagsDiv);
-  }
-
   recipeDetail.appendChild(detailActions);
   recipeDetail.appendChild(descSection);
   recipeDetail.appendChild(ingSection);
   recipeDetail.appendChild(stepsSection);
 
-  // links
   const links = recipe.links || [];
   if (links.length > 0) {
     const linksSection = document.createElement('section');
@@ -409,7 +243,7 @@ function showDetail(id) {
     links.forEach(link => {
       const a = document.createElement('a');
       if (link.type === 'recipe') {
-        const linked = recipes.find(r => r.id === link.id);
+        const linked = state.recipes.find(r => r.id === link.linked_recipe_id);
         a.appendChild(icon('link'));
         a.appendChild(document.createTextNode(' ' + (linked ? linked.title : 'Unknown recipe')));
         a.href = '#';
@@ -438,7 +272,7 @@ function showDetail(id) {
 // ── View switching ────────────────────────────────────────────────────────────
 
 function showView(name) {
-  const catHome      = $('#view-categories-home');
+  const catHome       = $('#view-categories-home');
   const recipeBrowser = $('#recipe-browser');
 
   if (name === 'categories') {
@@ -483,8 +317,7 @@ function showCategoriesHome() {
 }
 
 function renderCategoryCards() {
-  const recipes = getRecipes();
-  const categories = getAllCategories(recipes);
+  const categories = getAllCategories(state.recipes);
   const grid = $('#category-cards-grid');
   const msg  = $('#no-categories-msg');
   grid.innerHTML = '';
@@ -496,7 +329,7 @@ function renderCategoryCards() {
   msg.classList.add('hidden');
 
   categories.forEach(cat => {
-    const catRecipes = recipes.filter(r =>
+    const catRecipes = state.recipes.filter(r =>
       (r.categories || []).map(c => c.toLowerCase().trim()).includes(cat));
 
     const card = document.createElement('div');
@@ -558,7 +391,7 @@ function openAddModal() {
 }
 
 function openEditModal(id) {
-  const recipe = getRecipes().find(r => r.id === id);
+  const recipe = state.recipes.find(r => r.id === id);
   if (!recipe) return;
   state.editingId = id;
   $('#modal-title').textContent = 'Edit Recipe';
@@ -566,7 +399,7 @@ function openEditModal(id) {
   $('#form-title').value = recipe.title;
   $('#form-description').value = recipe.description || '';
   $('#form-categories').value = (recipe.categories || []).join(', ');
-  $('#form-tags').value = (recipe.tags || []).join(', ');
+  $('#form-tags').value = '';
 
   clearDynamicList('ingredients-list');
   (recipe.ingredients || []).forEach(ing => addIngredientRow(ing));
@@ -619,8 +452,7 @@ function addLinkRow(link = {}) {
   });
   typeSelect.value = link.type || 'external';
 
-  // Datalist for recipe suggestions
-  const dlId = 'dl-' + generateId();
+  const dlId = 'dl-' + Math.random().toString(36).slice(2);
   const datalist = document.createElement('datalist');
   datalist.id = dlId;
 
@@ -628,14 +460,12 @@ function addLinkRow(link = {}) {
   urlInput.type = 'text';
   urlInput.className = 'link-url';
 
-  // For recipe type: show title; for external: show URL
   if (link.type === 'recipe') {
-    const allRecipes = getRecipes();
-    const linked = allRecipes.find(r => r.id === link.id);
+    const linked = state.recipes.find(r => r.id === link.linked_recipe_id);
     urlInput.value = linked ? linked.title : '';
     urlInput.placeholder = 'Type recipe name…';
     urlInput.setAttribute('list', dlId);
-    allRecipes.forEach(r => {
+    state.recipes.forEach(r => {
       const opt = document.createElement('option');
       opt.value = r.title;
       datalist.appendChild(opt);
@@ -656,7 +486,7 @@ function addLinkRow(link = {}) {
       urlInput.placeholder = 'Type recipe name…';
       urlInput.value = '';
       datalist.innerHTML = '';
-      getRecipes().forEach(r => {
+      state.recipes.forEach(r => {
         const opt = document.createElement('option');
         opt.value = r.title;
         datalist.appendChild(opt);
@@ -721,11 +551,9 @@ function collectLinks() {
     if (!urlVal) return null;
 
     if (type === 'recipe') {
-      // resolve recipe by id or title
-      const recipes = getRecipes();
-      const match = recipes.find(r => r.id === urlVal ||
+      const match = state.recipes.find(r =>
         r.title.toLowerCase() === urlVal.toLowerCase());
-      return match ? { type: 'recipe', id: match.id } : null;
+      return match ? { type: 'recipe', linked_recipe_id: match.id } : null;
     }
     return { type: 'external', url: urlVal, label: labelVal.trim() };
   }).filter(Boolean);
@@ -744,7 +572,7 @@ function clearFormError() {
   el.classList.add('hidden');
 }
 
-function handleFormSubmit(e) {
+async function handleFormSubmit(e) {
   e.preventDefault();
   clearFormError();
 
@@ -755,9 +583,6 @@ function handleFormSubmit(e) {
     .split(',').map(c => c.trim().toLowerCase()).filter(Boolean);
   if (categories.length === 0) { showFormError('Please enter at least one category.'); $('#form-categories').focus(); return; }
 
-  const tags = ($('#form-tags').value || '')
-    .split(',').map(t => t.trim().toLowerCase()).filter(Boolean);
-
   const ingredients = collectDynamicValues('ingredients-list');
   if (ingredients.length === 0) { showFormError('Please add at least one ingredient.'); return; }
 
@@ -766,58 +591,44 @@ function handleFormSubmit(e) {
 
   const links = collectLinks();
 
-  const recipes = getRecipes();
+  const recipeData = {
+    title,
+    description: $('#form-description').value.trim(),
+    categories,
+    ingredients,
+    steps,
+    links,
+  };
 
-  if (state.editingId) {
-    const idx = recipes.findIndex(r => r.id === state.editingId);
-    if (idx !== -1) {
-      recipes[idx] = {
-        ...recipes[idx],
-        title,
-        description: $('#form-description').value.trim(),
-        categories,
-        tags,
-        ingredients,
-        steps,
-        links
-      };
+  const editingId = state.editingId;
+
+  try {
+    if (editingId) {
+      await window.API.recipes.update(editingId, recipeData);
+    } else {
+      await window.API.recipes.create(recipeData);
     }
-  } else {
-    recipes.push({
-      id: generateId(),
-      title,
-      description: $('#form-description').value.trim(),
-      categories,
-      tags,
-      ingredients,
-      steps,
-      links
-    });
-  }
-
-  saveRecipes(recipes);
-  closeModal();
-  renderCategories();
-  renderCategoryCards();
-  renderRecipeList();
-
-  // If we edited the currently viewed detail, refresh it
-  if (state.editingId && !viewDetail.classList.contains('hidden')) {
-    showDetail(state.editingId);
+    closeModal();
+    await loadAndRender();
+    if (editingId && !viewDetail.classList.contains('hidden')) {
+      const updated = state.recipes.find(r => r.id === editingId);
+      if (updated) showDetail(updated.id);
+    }
+  } catch (err) {
+    showFormError(err.message || 'Failed to save recipe. Please try again.');
   }
 }
 
 // ── Modal: Delete ─────────────────────────────────────────────────────────────
 
 function openDeleteModal(id) {
-  const recipes = getRecipes();
-  const recipe = recipes.find(r => r.id === id);
+  const recipe = state.recipes.find(r => r.id === id);
   if (!recipe) return;
   state.pendingDeleteId = id;
   $('#delete-recipe-name').textContent = recipe.title;
 
-  const linkedBy = recipes.filter(r =>
-    r.id !== id && (r.links || []).some(l => l.type === 'recipe' && l.id === id)
+  const linkedBy = state.recipes.filter(r =>
+    r.id !== id && (r.links || []).some(l => l.type === 'recipe' && l.linked_recipe_id === id)
   );
   const blockMsg = $('#delete-block-msg');
   const confirmBtn = $('#btn-confirm-delete');
@@ -840,80 +651,31 @@ function closeDeleteModal() {
   deleteOverlay.classList.add('hidden');
 }
 
-function confirmDelete() {
+async function confirmDelete() {
   if (!state.pendingDeleteId) return;
-  const recipes = getRecipes();
-  const linkedBy = recipes.filter(r =>
+
+  const linkedBy = state.recipes.filter(r =>
     r.id !== state.pendingDeleteId &&
-    (r.links || []).some(l => l.type === 'recipe' && l.id === state.pendingDeleteId)
+    (r.links || []).some(l => l.type === 'recipe' && l.linked_recipe_id === state.pendingDeleteId)
   );
   if (linkedBy.length > 0) return;
-  const updated = recipes.filter(r => r.id !== state.pendingDeleteId);
-  saveRecipes(updated);
-  closeDeleteModal();
-  renderCategories();
-  renderCategoryCards();
-  renderRecipeList();
-  showView('list');
+
+  try {
+    await window.API.recipes.delete(state.pendingDeleteId);
+    closeDeleteModal();
+    await loadAndRender();
+    showView('list');
+  } catch (err) {
+    const blockMsg = $('#delete-block-msg');
+    blockMsg.textContent = err.message || 'Failed to delete recipe.';
+    blockMsg.classList.remove('hidden');
+  }
 }
 
 // ── Utilities ─────────────────────────────────────────────────────────────────
 
 function capitalize(str) {
   return str.charAt(0).toUpperCase() + str.slice(1);
-}
-
-// ── Event wiring ──────────────────────────────────────────────────────────────
-
-function wireEvents() {
-  $('#logo').addEventListener('click', showCategoriesHome);
-  $('#btn-logout').addEventListener('click', () => {
-    localStorage.removeItem(SESSION_KEY);
-    location.reload();
-  });
-  $('#login-form').addEventListener('submit', handleLoginSubmit);
-
-  $('#btn-add-recipe').addEventListener('click', openAddModal);
-  $('#btn-cancel').addEventListener('click', closeModal);
-  recipeForm.addEventListener('submit', handleFormSubmit);
-
-  $('#btn-add-ingredient').addEventListener('click', () => addIngredientRow(''));
-  $('#btn-add-step').addEventListener('click', () => addStepRow(''));
-  $('#btn-add-link').addEventListener('click', () => addLinkRow());
-
-  $('#btn-back').addEventListener('click', () => { showView('list'); });
-
-  $('#btn-confirm-delete').addEventListener('click', confirmDelete);
-  $('#btn-cancel-delete').addEventListener('click', closeDeleteModal);
-
-  // Mobile sidebar drawer
-  $('#btn-menu-toggle').addEventListener('click', toggleSidebar);
-  $('#drawer-overlay').addEventListener('click', closeSidebar);
-
-  // FAB (mobile)
-  $('#fab-add').addEventListener('click', openAddModal);
-
-  // Close modals on backdrop click
-  modalOverlay.addEventListener('click', e => { if (e.target === modalOverlay) closeModal(); });
-  deleteOverlay.addEventListener('click', e => { if (e.target === deleteOverlay) closeDeleteModal(); });
-
-  // Escape key closes modals
-  document.addEventListener('keydown', e => {
-    if (e.key === 'Escape') { closeModal(); closeDeleteModal(); closeSidebar(); }
-  });
-
-  // Search
-  searchInput.addEventListener('input', () => {
-    state.searchQuery = searchInput.value.trim();
-    if (state.searchQuery) {
-      state.activeCategory = null;
-      renderCategories();
-      renderRecipeList();
-      showView('list');
-    } else {
-      showCategoriesHome();
-    }
-  });
 }
 
 // ── Mobile sidebar drawer ─────────────────────────────────────────────────────
@@ -930,18 +692,96 @@ function closeSidebar() {
   $('#drawer-overlay').classList.add('hidden');
 }
 
-// ── Bootstrap ─────────────────────────────────────────────────────────────────
+// ── Event wiring ──────────────────────────────────────────────────────────────
 
-async function init() {
-  await initUsers();
-  seedIfEmpty();
-  wireEvents();
+function wireEvents() {
+  $('#logo').addEventListener('click', showCategoriesHome);
+
+  $('#btn-logout').addEventListener('click', () => {
+    window.API.clearToken();
+    location.reload();
+  });
+
+  $('#login-form').addEventListener('submit', handleLoginSubmit);
+
+  $('#btn-add-recipe').addEventListener('click', openAddModal);
+  $('#btn-cancel').addEventListener('click', closeModal);
+  recipeForm.addEventListener('submit', handleFormSubmit);
+
+  $('#btn-add-ingredient').addEventListener('click', () => addIngredientRow(''));
+  $('#btn-add-step').addEventListener('click', () => addStepRow(''));
+  $('#btn-add-link').addEventListener('click', () => addLinkRow());
+
+  $('#btn-back').addEventListener('click', () => showView('list'));
+
+  $('#btn-confirm-delete').addEventListener('click', confirmDelete);
+  $('#btn-cancel-delete').addEventListener('click', closeDeleteModal);
+
+  $('#btn-menu-toggle').addEventListener('click', toggleSidebar);
+  $('#drawer-overlay').addEventListener('click', closeSidebar);
+
+  $('#fab-add').addEventListener('click', openAddModal);
+
+  modalOverlay.addEventListener('click', e => { if (e.target === modalOverlay) closeModal(); });
+  deleteOverlay.addEventListener('click', e => { if (e.target === deleteOverlay) closeDeleteModal(); });
+
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape') { closeModal(); closeDeleteModal(); closeSidebar(); }
+  });
+
+  searchInput.addEventListener('input', () => {
+    state.searchQuery = searchInput.value.trim();
+    if (state.searchQuery) {
+      state.activeCategory = null;
+      renderCategories();
+      renderRecipeList();
+      showView('list');
+    } else {
+      showCategoriesHome();
+    }
+  });
+}
+
+// ── Auth ──────────────────────────────────────────────────────────────────────
+
+async function handleLoginSubmit(e) {
+  e.preventDefault();
+  const username = $('#login-username').value.trim();
+  const password = $('#login-password').value;
+  const errorEl = $('#login-error');
+  errorEl.classList.add('hidden');
+
+  try {
+    const { token } = await window.API.auth.login(username, password);
+    window.API.setToken(token);
+    $('#login-overlay').classList.add('hidden');
+    await loadAndRender();
+  } catch {
+    errorEl.classList.remove('hidden');
+  }
+}
+
+// ── Data loading ──────────────────────────────────────────────────────────────
+
+async function loadAndRender() {
+  try {
+    state.recipes = await window.API.recipes.getAll() || [];
+  } catch {
+    state.recipes = [];
+  }
   renderCategories();
   renderCategoryCards();
   renderRecipeList();
   showView('categories');
-  if (isLoggedIn()) {
+}
+
+// ── Bootstrap ─────────────────────────────────────────────────────────────────
+
+async function init() {
+  wireEvents();
+  if (window.API.getToken()) {
     $('#login-overlay').classList.add('hidden');
+    await loadAndRender();
   }
 }
 
