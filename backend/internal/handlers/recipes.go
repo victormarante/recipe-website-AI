@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"log"
 	"net/http"
 	"strconv"
 
@@ -43,6 +44,9 @@ func NewRecipeHandler(repo *repository.RecipeRepository, cfg *config.Config) *Re
 				o.BaseEndpoint = aws.String(fmt.Sprintf("https://%s.r2.cloudflarestorage.com", cfg.R2AccountID))
 				o.UsePathStyle = true
 			})
+			log.Printf("info: R2 client initialized (bucket=%s)", cfg.R2BucketName)
+		} else {
+			log.Printf("error: failed to initialize R2 client: %v", err)
 		}
 	}
 	return h
@@ -157,15 +161,15 @@ func (h *RecipeHandler) sendJSON(w http.ResponseWriter, status int, data interfa
 	json.NewEncoder(w).Encode(data)
 }
 
-// sendError sends an error response
+// sendError sends an error response and logs 5xx errors server-side.
 func (h *RecipeHandler) sendError(w http.ResponseWriter, status int, message string, err error) {
+	if status >= 500 {
+		log.Printf("error: %s: %v", message, err)
+	}
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(status)
-
-	errResp := models.ErrorResponse{
+	json.NewEncoder(w).Encode(models.ErrorResponse{
 		Error:   message,
 		Message: err.Error(),
-	}
-
-	json.NewEncoder(w).Encode(errResp)
+	})
 }
