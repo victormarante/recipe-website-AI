@@ -4,6 +4,10 @@
 
 Marellis Recipe Website is a personal hobby project for storing and sharing recipes.
 
+Live URLs:
+- API: https://recipe-website-ai.fly.dev
+- UI: https://victormarante.github.io/recipe-website-AI/
+
 Architecture:
 - Frontend: Vanilla JavaScript (HTML/CSS/JS)
 - Backend: Go 1.21+ (Chi router)

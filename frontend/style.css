@@ -401,10 +401,11 @@ header h1 .md-icon { width: 1.6rem; height: 1.6rem; }
 .recipe-card-img {
   width: calc(100% + 2.4rem);
   height: 140px;
-  object-fit: cover;
+  object-fit: contain;
   border-radius: var(--radius) var(--radius) 0 0;
   margin: -1.1rem -1.2rem .75rem -1.2rem;
   display: block;
+  background: var(--clr-surface, #f8f8f8);
 }
 
 .recipe-card h3 { font-size: 1.05rem; color: var(--clr-primary); font-weight: 700; }
@@ -640,10 +641,11 @@ header h1 .md-icon { width: 1.6rem; height: 1.6rem; }
 .recipe-photo {
   display: block;
   width: 100%;
-  max-height: 300px;
-  object-fit: cover;
+  max-height: 400px;
+  object-fit: contain;
   border-radius: var(--radius);
   margin-bottom: 1rem;
+  background: var(--clr-surface, #f8f8f8);
 }
 
 .form-image-preview {
