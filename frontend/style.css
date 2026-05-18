@@ -394,8 +394,18 @@ header h1 .md-icon { width: 1.6rem; height: 1.6rem; }
   flex-direction: column;
   gap: .5rem;
   border-left: 4px solid var(--clr-primary);
+  overflow: hidden;
 }
 .recipe-card:hover { transform: translateY(-2px); box-shadow: var(--shadow-md); }
+
+.recipe-card-img {
+  width: calc(100% + 2.4rem);
+  height: 140px;
+  object-fit: cover;
+  border-radius: var(--radius) var(--radius) 0 0;
+  margin: -1.1rem -1.2rem .75rem -1.2rem;
+  display: block;
+}
 
 .recipe-card h3 { font-size: 1.05rem; color: var(--clr-primary); font-weight: 700; }
 .recipe-card p  { font-size: .87rem; color: var(--clr-muted); flex: 1; line-height: 1.5; }
@@ -759,6 +769,9 @@ footer {
   .modal { padding: 1.5rem; }
   .form-actions { justify-content: stretch; }
   .form-actions .btn { flex: 1; justify-content: center; }
+
+  /* Prevent iOS Safari auto-zoom on input focus (threshold is 16px) */
+  input, textarea, select { font-size: 1rem; }
 }
 
 @media (max-width: 480px) {

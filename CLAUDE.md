@@ -194,12 +194,16 @@ Before large changes:
 - Main branch: `master`
 - Workflows trigger on push to `master`
 
-**Branching:**
-- Always create a new feature branch from `origin/master` before starting any feature or fix, unless explicitly instructed otherwise
-- Pull `origin/master` first to ensure the branch is up to date: `git fetch origin && git checkout -b feature/<name> origin/master`
+**Full feature workflow (default for every feature/fix request):**
 
-Before significant changes:
-- recommend a checkpoint commit
+1. `git fetch origin && git checkout -b feature/<name> origin/master`
+2. Implement the change with small, descriptive commits
+3. `git push -u origin feature/<name>`
+4. Open a GitHub PR targeting `master`
+
+**Permission mode behaviour:**
+- **Autopilot / bypass permissions**: Run all four steps automatically without prompting
+- **Interactive (default)**: After completing the work, ask the user whether to push and open a PR before doing so
 
 Commit style:
 - small
