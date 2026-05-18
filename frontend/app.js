@@ -154,6 +154,14 @@ function buildCard(recipe) {
   actions.appendChild(editBtn);
   actions.appendChild(delBtn);
 
+  if (recipe.image_url) {
+    const thumb = document.createElement('img');
+    thumb.src = recipe.image_url;
+    thumb.alt = recipe.title;
+    thumb.className = 'recipe-card-img';
+    card.appendChild(thumb);
+  }
+
   card.appendChild(h3);
   card.appendChild(p);
   card.appendChild(tags);
