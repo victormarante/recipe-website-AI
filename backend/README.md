@@ -32,7 +32,7 @@ backend/
 Required:
 
 - `AUTH_USERNAME`
-- `AUTH_PASSWORD`
+- `AUTH_PASSWORD` or `AUTH_PASSWORD_HASH`
 - `JWT_SECRET`
 
 Common:
@@ -50,7 +50,9 @@ Optional R2 image storage:
 - `R2_BUCKET_NAME`
 - `R2_PUBLIC_URL`
 
-The app initializes an R2 client when account ID, access key, and secret key are present. Image uploads also need bucket and public URL values to be useful.
+The app initializes image storage only when all R2 variables are present. A partial R2 configuration fails startup. Leave all R2 variables empty to disable image endpoints.
+
+For production, prefer `AUTH_PASSWORD_HASH` with a bcrypt hash. `AUTH_PASSWORD` remains supported for local development and existing deployments.
 
 ## Run Locally
 
@@ -75,7 +77,7 @@ go test ./...
 go vet ./...
 ```
 
-There are currently no Go test files, so `go test ./...` only verifies that packages compile.
+The test suite covers repository behavior, migrations, authentication middleware, handlers, and router behavior.
 
 ## API
 
@@ -84,6 +86,7 @@ Base path: `/api/v1`
 Public:
 
 - `GET /health`
+- `GET /ready`
 - `POST /api/v1/auth/login`
 
 Protected by `Authorization: Bearer <token>`:
@@ -152,7 +155,9 @@ curl -X POST http://localhost:8080/api/v1/recipes/1/image \
   -F "image=@photo.jpg"
 ```
 
-The request is limited to 5 MB. The server checks the detected content type starts with `image/`.
+The request is limited to 5 MB. Detected content type must be `image/jpeg`, `image/png`, or `image/webp`.
+
+Images are stored under `recipes/{id}` in the configured bucket. Uploading a new image for the same recipe overwrites the previous object at that key. The backend does not currently set custom cache-control headers.
 
 ### Delete Recipe Image
 
@@ -163,10 +168,10 @@ curl -X DELETE http://localhost:8080/api/v1/recipes/1/image \
 
 ## Database
 
-`migrations/001_create_tables.sql` creates the base `recipes` table and indexes. On startup, `cmd/api/main.go` also adds `oven_temperature` and `image_url` columns if they are missing.
+`migrations/001_create_tables.sql` creates the base `recipes` table and indexes. `migrations/002_add_recipe_metadata.sql` adds `oven_temperature` and `image_url`.
 
-Future schema changes should use numbered migrations instead of additional runtime schema edits.
+Startup applies ordered SQL migrations once and records them in `schema_migrations`. Fresh databases reach the latest schema, and old databases are upgraded without resetting recipe data.
 
 ## Deployment
 
-The active Fly.io deployment path uses the root `fly.toml` and root `Dockerfile`, not `backend/Dockerfile`.
+The active Fly.io deployment path uses the root `fly.toml` and root `Dockerfile`.

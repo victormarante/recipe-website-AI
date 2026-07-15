@@ -47,6 +47,8 @@ Open `http://localhost:8000`.
 
 There is no automated frontend test suite today. For frontend changes, check at minimum:
 
+- `node --check frontend/api.js`
+- `node --check frontend/app.js`
 - The page loads without console errors
 - Login works with configured backend credentials
 - Recipes load after login

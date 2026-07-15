@@ -3,12 +3,16 @@ package repository
 import (
 	"database/sql"
 	"encoding/json"
+	"errors"
 	"fmt"
+	"sort"
 	"strings"
 
 	"github.com/jmoiron/sqlx"
 	"recipe-backend/internal/models"
 )
+
+var ErrNotFound = errors.New("recipe not found")
 
 // RecipeRepository handles database operations for recipes
 type RecipeRepository struct {
@@ -121,7 +125,7 @@ func (r *RecipeRepository) FindByID(id int64) (*models.Recipe, error) {
 	var dbr dbRecipe
 	if err := r.db.Get(&dbr, query, id); err != nil {
 		if err == sql.ErrNoRows {
-			return nil, fmt.Errorf("recipe not found")
+			return nil, ErrNotFound
 		}
 		return nil, fmt.Errorf("failed to query recipe: %w", err)
 	}
@@ -181,7 +185,7 @@ func (r *RecipeRepository) Delete(id int64) error {
 	}
 
 	if rowsAffected == 0 {
-		return fmt.Errorf("recipe not found")
+		return ErrNotFound
 	}
 
 	return nil
@@ -213,15 +217,23 @@ func (r *RecipeRepository) GetAllCategories() ([]string, error) {
 	for cat := range categorySet {
 		categories = append(categories, cat)
 	}
+	sort.Strings(categories)
 
 	return categories, nil
 }
 
 // UpdateImageURL sets or clears the image_url for a recipe.
 func (r *RecipeRepository) UpdateImageURL(id int64, imageURL *string) error {
-	_, err := r.db.Exec(`UPDATE recipes SET image_url = ? WHERE id = ?`, imageURL, id)
+	result, err := r.db.Exec(`UPDATE recipes SET image_url = ? WHERE id = ?`, imageURL, id)
 	if err != nil {
 		return fmt.Errorf("failed to update image_url: %w", err)
+	}
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		return fmt.Errorf("failed to get rows affected: %w", err)
+	}
+	if rowsAffected == 0 {
+		return ErrNotFound
 	}
 	return nil
 }

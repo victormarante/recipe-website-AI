@@ -23,8 +23,17 @@ primary_region = 'arn'
   min_machines_running = 0
   processes = ['app']
 
+[checks]
+  [checks.ready]
+    type = "http"
+    port = 8080
+    method = "GET"
+    path = "/ready"
+    interval = "30s"
+    timeout = "5s"
+    grace_period = "10s"
+
 [[vm]]
-  memory = '1gb'
+  memory = '256mb'
   cpu_kind = 'shared'
   cpus = 1
-  memory_mb = 256

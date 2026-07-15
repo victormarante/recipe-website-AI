@@ -13,16 +13,18 @@ Fly.io configuration is at the repository root:
 - `fly.toml`
 - `Dockerfile`
 
-Because `fly.toml` is root-level and has an empty `[build]` section, `flyctl deploy` uses the root Docker build context and the root `Dockerfile`. The separate `backend/Dockerfile` is not the canonical Fly deployment path in the current layout.
+Because `fly.toml` is root-level and has an empty `[build]` section, `flyctl deploy` uses the root Docker build context and the root `Dockerfile`. There is no second backend Dockerfile.
 
 Required Fly secrets:
 
 ```bash
 flyctl secrets set AUTH_USERNAME="..."
-flyctl secrets set AUTH_PASSWORD="..."
+flyctl secrets set AUTH_PASSWORD_HASH='...'
 flyctl secrets set JWT_SECRET="..."
 flyctl secrets set CORS_ORIGIN="https://<owner>.github.io"
 ```
+
+`AUTH_PASSWORD` is still supported for backwards compatibility. Prefer `AUTH_PASSWORD_HASH` for production. Generate a bcrypt hash locally with a trusted tool and do not commit it.
 
 Optional image storage secrets:
 
@@ -62,22 +64,20 @@ Current workflows:
 
 - `.github/workflows/validate.yml`
   - Runs on pushes and pull requests to `master`
-  - Uses `actions/setup-go@v5` with Go `1.21`
-  - Runs `go mod download`, `gofmt` check, `go build ./...`, and `go test ./...`
-  - Checks that key frontend files exist
+  - Uses `actions/setup-go@v5` with `go-version-file: backend/go.mod`
+  - Runs `go mod download`, `gofmt` check, `go build ./...`, `go vet ./...`, and `go test ./...`
+  - Checks that key frontend files exist and runs JavaScript/HTML syntax checks
 - `.github/workflows/deploy-backend.yml`
-  - Runs on every push to `master`
+  - Runs after the `Validate` workflow succeeds on `master`
   - Deploys with `flyctl deploy --remote-only`
 - `.github/workflows/deploy-frontend.yml`
-  - Runs on every push to `master`
+  - Runs after the `Validate` workflow succeeds on `master`
   - Deploys `frontend/` to GitHub Pages
 
-Important current limitations:
+Current notes:
 
-- Deployment workflows are not gated on successful validation.
-- Backend deployment is not path-filtered; every push to `master` triggers it.
-- The validation workflow uses Go `1.21`, while `backend/go.mod` and the root Dockerfile use Go `1.24`.
-- Some actions are pinned to moving tags or branches rather than commit SHAs.
+- Deployment workflows are gated on successful validation, but are not path-filtered.
+- The Fly setup action is pinned to tag `1.6`; official GitHub actions use stable major version tags.
 
 These are tracked in `TODO.md`.
 
@@ -99,10 +99,23 @@ GitHub provides `GITHUB_TOKEN` automatically for Pages deployment.
 
 ## Operational Notes
 
-- The backend currently starts with `http.ListenAndServe` and does not implement graceful shutdown.
+- The backend uses `http.Server` with read/write/idle timeouts and graceful shutdown on `SIGINT`/`SIGTERM`.
 - SQLite persistence depends on the Fly volume mounted at `/data`.
-- Database backup, restore, readiness, and recovery procedures are not yet documented.
+- `/health` is a liveness endpoint. `/ready` checks SQLite connectivity and is configured as the Fly health check.
 - There is no `/docs` API documentation endpoint in the application.
+
+## Database Backup And Restore
+
+SQLite data lives at `/data/recipes.db` on the Fly volume. Before risky changes, take a Fly volume snapshot or copy the database file from a stopped or quiet app instance. Avoid copying during active writes.
+
+Basic owner-run options:
+
+```bash
+flyctl volumes snapshots list
+flyctl ssh console
+```
+
+Inside the machine, inspect `/data/recipes.db`. Restore procedures should be rehearsed with a non-production copy before relying on them in production.
 
 ## Useful Commands
 

@@ -3,6 +3,7 @@ package handlers
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"log"
 	"net/http"
@@ -17,14 +18,20 @@ import (
 	"recipe-backend/internal/config"
 	"recipe-backend/internal/models"
 	"recipe-backend/internal/repository"
+	"recipe-backend/internal/respond"
 )
+
+type objectStore interface {
+	PutObject(context.Context, *s3.PutObjectInput, ...func(*s3.Options)) (*s3.PutObjectOutput, error)
+	DeleteObject(context.Context, *s3.DeleteObjectInput, ...func(*s3.Options)) (*s3.DeleteObjectOutput, error)
+}
 
 // RecipeHandler handles HTTP requests for recipes
 type RecipeHandler struct {
 	repo     *repository.RecipeRepository
 	validate *validator.Validate
 	cfg      *config.Config
-	s3Client *s3.Client
+	s3Client objectStore
 }
 
 // NewRecipeHandler creates a new RecipeHandler
@@ -59,11 +66,11 @@ func (h *RecipeHandler) GetRecipes(w http.ResponseWriter, r *http.Request) {
 
 	recipes, err := h.repo.FindAll(category, searchQuery)
 	if err != nil {
-		h.sendError(w, http.StatusInternalServerError, "Failed to fetch recipes", err)
+		respond.InternalError(w, "Failed to fetch recipes", err)
 		return
 	}
 
-	h.sendJSON(w, http.StatusOK, recipes)
+	respond.JSON(w, http.StatusOK, recipes)
 }
 
 // GetRecipe handles GET /api/v1/recipes/:id
@@ -71,17 +78,21 @@ func (h *RecipeHandler) GetRecipe(w http.ResponseWriter, r *http.Request) {
 	idStr := chi.URLParam(r, "id")
 	id, err := strconv.ParseInt(idStr, 10, 64)
 	if err != nil {
-		h.sendError(w, http.StatusBadRequest, "Invalid recipe ID", err)
+		respond.Error(w, http.StatusBadRequest, "Invalid recipe ID")
 		return
 	}
 
 	recipe, err := h.repo.FindByID(id)
 	if err != nil {
-		h.sendError(w, http.StatusNotFound, "Recipe not found", err)
+		if errors.Is(err, repository.ErrNotFound) {
+			respond.Error(w, http.StatusNotFound, "Recipe not found")
+			return
+		}
+		respond.InternalError(w, "Failed to fetch recipe", err)
 		return
 	}
 
-	h.sendJSON(w, http.StatusOK, recipe)
+	respond.JSON(w, http.StatusOK, recipe)
 }
 
 // CreateRecipe handles POST /api/v1/recipes
@@ -89,22 +100,22 @@ func (h *RecipeHandler) CreateRecipe(w http.ResponseWriter, r *http.Request) {
 	var req models.CreateRecipeRequest
 
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		h.sendError(w, http.StatusBadRequest, "Invalid request body", err)
+		respond.Error(w, http.StatusBadRequest, "Invalid request body")
 		return
 	}
 
 	if err := h.validate.Struct(req); err != nil {
-		h.sendError(w, http.StatusBadRequest, "Validation failed", err)
+		respond.Error(w, http.StatusBadRequest, "Validation failed")
 		return
 	}
 
 	recipe, err := h.repo.Create(req)
 	if err != nil {
-		h.sendError(w, http.StatusInternalServerError, "Failed to create recipe", err)
+		respond.InternalError(w, "Failed to create recipe", err)
 		return
 	}
 
-	h.sendJSON(w, http.StatusCreated, recipe)
+	respond.JSON(w, http.StatusCreated, recipe)
 }
 
 // UpdateRecipe handles PUT /api/v1/recipes/:id
@@ -112,29 +123,33 @@ func (h *RecipeHandler) UpdateRecipe(w http.ResponseWriter, r *http.Request) {
 	idStr := chi.URLParam(r, "id")
 	id, err := strconv.ParseInt(idStr, 10, 64)
 	if err != nil {
-		h.sendError(w, http.StatusBadRequest, "Invalid recipe ID", err)
+		respond.Error(w, http.StatusBadRequest, "Invalid recipe ID")
 		return
 	}
 
 	var req models.UpdateRecipeRequest
 
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		h.sendError(w, http.StatusBadRequest, "Invalid request body", err)
+		respond.Error(w, http.StatusBadRequest, "Invalid request body")
 		return
 	}
 
 	if err := h.validate.Struct(req); err != nil {
-		h.sendError(w, http.StatusBadRequest, "Validation failed", err)
+		respond.Error(w, http.StatusBadRequest, "Validation failed")
 		return
 	}
 
 	recipe, err := h.repo.Update(id, req)
 	if err != nil {
-		h.sendError(w, http.StatusInternalServerError, "Failed to update recipe", err)
+		if errors.Is(err, repository.ErrNotFound) {
+			respond.Error(w, http.StatusNotFound, "Recipe not found")
+			return
+		}
+		respond.InternalError(w, "Failed to update recipe", err)
 		return
 	}
 
-	h.sendJSON(w, http.StatusOK, recipe)
+	respond.JSON(w, http.StatusOK, recipe)
 }
 
 // DeleteRecipe handles DELETE /api/v1/recipes/:id
@@ -142,34 +157,18 @@ func (h *RecipeHandler) DeleteRecipe(w http.ResponseWriter, r *http.Request) {
 	idStr := chi.URLParam(r, "id")
 	id, err := strconv.ParseInt(idStr, 10, 64)
 	if err != nil {
-		h.sendError(w, http.StatusBadRequest, "Invalid recipe ID", err)
+		respond.Error(w, http.StatusBadRequest, "Invalid recipe ID")
 		return
 	}
 
 	if err := h.repo.Delete(id); err != nil {
-		h.sendError(w, http.StatusInternalServerError, "Failed to delete recipe", err)
+		if errors.Is(err, repository.ErrNotFound) {
+			respond.Error(w, http.StatusNotFound, "Recipe not found")
+			return
+		}
+		respond.InternalError(w, "Failed to delete recipe", err)
 		return
 	}
 
 	w.WriteHeader(http.StatusNoContent)
-}
-
-// sendJSON sends a JSON response
-func (h *RecipeHandler) sendJSON(w http.ResponseWriter, status int, data interface{}) {
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(status)
-	json.NewEncoder(w).Encode(data)
-}
-
-// sendError sends an error response and logs 5xx errors server-side.
-func (h *RecipeHandler) sendError(w http.ResponseWriter, status int, message string, err error) {
-	if status >= 500 {
-		log.Printf("error: %s: %v", message, err)
-	}
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(status)
-	json.NewEncoder(w).Encode(models.ErrorResponse{
-		Error:   message,
-		Message: err.Error(),
-	})
 }

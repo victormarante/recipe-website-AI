@@ -6,9 +6,12 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/go-chi/cors"
+	"github.com/jmoiron/sqlx"
 	"recipe-backend/internal/config"
+	"recipe-backend/internal/database"
 	"recipe-backend/internal/handlers"
 	customMiddleware "recipe-backend/internal/middleware"
+	"recipe-backend/internal/respond"
 )
 
 // New creates and configures the application router
@@ -17,6 +20,7 @@ func New(
 	categoryHandler *handlers.CategoryHandler,
 	authHandler *handlers.AuthHandler,
 	cfg *config.Config,
+	db *sqlx.DB,
 ) *chi.Mux {
 	r := chi.NewRouter()
 
@@ -38,6 +42,13 @@ func New(
 	r.Get("/health", func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
 		w.Write([]byte("OK"))
+	})
+	r.Get("/ready", func(w http.ResponseWriter, r *http.Request) {
+		if err := database.HealthCheck(db); err != nil {
+			respond.InternalError(w, "Database not ready", err)
+			return
+		}
+		respond.JSON(w, http.StatusOK, map[string]string{"status": "ready"})
 	})
 
 	// API v1 routes

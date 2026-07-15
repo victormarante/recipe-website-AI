@@ -1,9 +1,12 @@
 package main
 
 import (
+	"context"
 	"log"
 	"net/http"
-	"path/filepath"
+	"os/signal"
+	"syscall"
+	"time"
 
 	"recipe-backend/internal/config"
 	"recipe-backend/internal/database"
@@ -24,17 +27,9 @@ func main() {
 	}
 	defer database.Close(db)
 
-	migrationPath := filepath.Join("migrations", "001_create_tables.sql")
-	if err := database.RunMigrations(db, migrationPath); err != nil {
+	migrationsDir := "migrations"
+	if err := database.RunMigrations(db, migrationsDir); err != nil {
 		log.Fatalf("migrations: %v", err)
-	}
-
-	if err := database.AddColumnIfNotExists(db, "recipes", "oven_temperature", "INTEGER DEFAULT NULL"); err != nil {
-		log.Fatalf("migration: %v", err)
-	}
-
-	if err := database.AddColumnIfNotExists(db, "recipes", "image_url", "TEXT"); err != nil {
-		log.Fatalf("migration: %v", err)
 	}
 
 	repo := repository.NewRecipeRepository(db)
@@ -42,10 +37,31 @@ func main() {
 	categoryHandler := handlers.NewCategoryHandler(repo)
 	authHandler := handlers.NewAuthHandler(cfg)
 
-	r := router.New(recipeHandler, categoryHandler, authHandler, cfg)
+	r := router.New(recipeHandler, categoryHandler, authHandler, cfg, db)
+
+	server := &http.Server{
+		Addr:              ":" + cfg.Port,
+		Handler:           r,
+		ReadHeaderTimeout: 5 * time.Second,
+		ReadTimeout:       10 * time.Second,
+		WriteTimeout:      30 * time.Second,
+		IdleTimeout:       60 * time.Second,
+	}
+
+	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
+	defer stop()
+
+	go func() {
+		<-ctx.Done()
+		shutdownCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+		defer cancel()
+		if err := server.Shutdown(shutdownCtx); err != nil {
+			log.Printf("error: graceful shutdown failed: %v", err)
+		}
+	}()
 
 	log.Printf("server listening on :%s", cfg.Port)
-	if err := http.ListenAndServe(":"+cfg.Port, r); err != nil {
+	if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 		log.Fatalf("server: %v", err)
 	}
 }

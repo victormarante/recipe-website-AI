@@ -18,7 +18,7 @@ Marellis is a family recipe website for storing, browsing, and editing recipes. 
 
 - `frontend/` is a static site. It talks directly to the backend API from the browser.
 - `backend/` is a Go API using Chi, sqlx, and SQLite.
-- The backend runs migrations on startup from `backend/migrations/001_create_tables.sql`, then applies two ad hoc runtime column additions for `oven_temperature` and `image_url`.
+- The backend runs ordered SQL migrations on startup and records applied versions in SQLite.
 - The root `Dockerfile` is the Fly.io build path for the current root-level `fly.toml`.
 - GitHub Actions validate the backend/frontend and deploy the frontend/backend from `master`.
 
@@ -75,7 +75,7 @@ Open `http://localhost:8000`. The frontend uses `http://localhost:8080` outside 
 Required backend variables:
 
 - `AUTH_USERNAME`
-- `AUTH_PASSWORD`
+- `AUTH_PASSWORD` or `AUTH_PASSWORD_HASH`
 - `JWT_SECRET`
 
 Common backend variables:
@@ -93,7 +93,7 @@ Optional R2 image storage variables:
 - `R2_BUCKET_NAME`
 - `R2_PUBLIC_URL`
 
-Note: `backend/.env.example` currently omits the optional R2 variables. This is tracked in `TODO.md`.
+For production, prefer `AUTH_PASSWORD_HASH` with a bcrypt hash and leave `AUTH_PASSWORD` empty. Plain `AUTH_PASSWORD` remains supported for local development and backwards-compatible deployments.
 
 ## Validation
 
@@ -113,6 +113,8 @@ Frontend:
 test -f frontend/index.html
 test -f frontend/app.js
 test -f frontend/api.js
+node --check frontend/api.js
+node --check frontend/app.js
 ```
 
 There is no frontend build step or package manager. Manual browser validation is currently expected for UI changes.
@@ -122,6 +124,7 @@ There is no frontend build step or package manager. Manual browser validation is
 Public endpoints:
 
 - `GET /health`
+- `GET /ready`
 - `POST /api/v1/auth/login`
 
 JWT-protected endpoints:
@@ -141,7 +144,7 @@ See [backend/README.md](backend/README.md) for request examples.
 
 - Backend: Fly.io uses the root `fly.toml` and root `Dockerfile`.
 - Frontend: GitHub Pages deploys the contents of `frontend/`.
-- GitHub Actions currently deploy backend and frontend on every push to `master`; deployment is not gated on the validation workflow.
+- GitHub Actions deploy backend and frontend only after the `Validate` workflow succeeds on `master`.
 
 See [DEPLOYMENT.md](DEPLOYMENT.md) for details.
 
@@ -149,12 +152,9 @@ See [DEPLOYMENT.md](DEPLOYMENT.md) for details.
 
 - Authentication is a single shared account configured through environment variables.
 - JWTs are stored in browser `sessionStorage` and expire after 24 hours.
-- API error responses can expose internal error details in the `message` field.
 - Search is SQL `LIKE` search, not SQLite FTS.
-- No Go test files currently exist.
-- The backend uses one numbered migration plus runtime column additions.
-- Graceful HTTP shutdown is not implemented.
-- Database backup/restore and readiness procedures are not yet documented.
+- Authentication is still a single shared account, not multi-user authorization.
+- Database backup/restore is documented at a basic operational level, but should be rehearsed before relying on it for production recovery.
 
 ## Documentation
 

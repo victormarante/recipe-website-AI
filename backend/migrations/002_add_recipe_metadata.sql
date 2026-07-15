@@ -1,0 +1,2 @@
+ALTER TABLE recipes ADD COLUMN oven_temperature INTEGER DEFAULT NULL;
+ALTER TABLE recipes ADD COLUMN image_url TEXT;

@@ -4,6 +4,9 @@ import (
 	"database/sql"
 	"fmt"
 	"os"
+	"path/filepath"
+	"sort"
+	"strings"
 
 	"github.com/jmoiron/sqlx"
 	_ "modernc.org/sqlite"
@@ -38,35 +41,83 @@ func New(dbPath string) (*sqlx.DB, error) {
 	return db, nil
 }
 
-// RunMigrations executes all SQL migration files
-func RunMigrations(db *sqlx.DB, migrationPath string) error {
-	// Read migration file
-	migrationSQL, err := os.ReadFile(migrationPath)
-	if err != nil {
-		return fmt.Errorf("failed to read migration file: %w", err)
+// RunMigrations executes SQL migration files in lexical order once.
+func RunMigrations(db *sqlx.DB, migrationsDir string) error {
+	if _, err := db.Exec(`
+		CREATE TABLE IF NOT EXISTS schema_migrations (
+			version TEXT PRIMARY KEY,
+			applied_at DATETIME DEFAULT CURRENT_TIMESTAMP
+		)
+	`); err != nil {
+		return fmt.Errorf("failed to ensure schema_migrations table: %w", err)
 	}
 
-	// Execute migration
-	if _, err := db.Exec(string(migrationSQL)); err != nil {
-		return fmt.Errorf("failed to execute migration: %w", err)
+	entries, err := os.ReadDir(migrationsDir)
+	if err != nil {
+		return fmt.Errorf("failed to read migrations directory: %w", err)
+	}
+
+	var files []string
+	for _, entry := range entries {
+		if !entry.IsDir() && strings.HasSuffix(entry.Name(), ".sql") {
+			files = append(files, entry.Name())
+		}
+	}
+	sort.Strings(files)
+
+	for _, file := range files {
+		version := strings.TrimSuffix(file, filepath.Ext(file))
+		var count int
+		if err := db.Get(&count, `SELECT COUNT(*) FROM schema_migrations WHERE version = ?`, version); err != nil {
+			return fmt.Errorf("failed to check migration %s: %w", version, err)
+		}
+		if count > 0 {
+			continue
+		}
+
+		migrationSQL, err := os.ReadFile(filepath.Join(migrationsDir, file))
+		if err != nil {
+			return fmt.Errorf("failed to read migration %s: %w", version, err)
+		}
+
+		tx, err := db.Beginx()
+		if err != nil {
+			return fmt.Errorf("failed to begin migration %s: %w", version, err)
+		}
+		if err := execMigrationSQL(tx, string(migrationSQL)); err != nil {
+			tx.Rollback()
+			return fmt.Errorf("failed to execute migration %s: %w", version, err)
+		}
+		if _, err := tx.Exec(`INSERT INTO schema_migrations (version) VALUES (?)`, version); err != nil {
+			tx.Rollback()
+			return fmt.Errorf("failed to record migration %s: %w", version, err)
+		}
+		if err := tx.Commit(); err != nil {
+			return fmt.Errorf("failed to commit migration %s: %w", version, err)
+		}
 	}
 
 	return nil
 }
 
-// AddColumnIfNotExists adds a column to a table only if it doesn't already exist.
-// Needed because SQLite does not support ALTER TABLE ... ADD COLUMN IF NOT EXISTS.
-func AddColumnIfNotExists(db *sqlx.DB, table, column, definition string) error {
-	var count int
-	if err := db.Get(&count, `SELECT COUNT(*) FROM pragma_table_info(?) WHERE name=?`, table, column); err != nil {
-		return fmt.Errorf("failed to check column existence: %w", err)
+func execMigrationSQL(tx *sqlx.Tx, migrationSQL string) error {
+	if strings.Contains(strings.ToUpper(migrationSQL), "CREATE TRIGGER") {
+		_, err := tx.Exec(migrationSQL)
+		return err
 	}
-	if count > 0 {
-		return nil
-	}
-	_, err := db.Exec(fmt.Sprintf("ALTER TABLE %s ADD COLUMN %s %s", table, column, definition))
-	if err != nil {
-		return fmt.Errorf("failed to add column %s: %w", column, err)
+
+	for _, statement := range strings.Split(migrationSQL, ";") {
+		statement = strings.TrimSpace(statement)
+		if statement == "" {
+			continue
+		}
+		if _, err := tx.Exec(statement); err != nil {
+			upperStatement := strings.ToUpper(statement)
+			if strings.HasPrefix(upperStatement, "ALTER TABLE") && strings.Contains(err.Error(), "duplicate column name") {
+				continue
+			}
+			return err
+		}
 	}
 	return nil
 }

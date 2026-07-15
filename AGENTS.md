@@ -15,7 +15,7 @@ Read the relevant files first, and include these when the change affects their a
 - Root docs: `README.md`, `SETUP.md`, `DEPLOYMENT.md`, `TODO.md`
 - Backend: `backend/go.mod`, `backend/.env.example`, `backend/cmd/api/main.go`, `backend/internal/router/router.go`, relevant handlers/repositories/models, and `backend/migrations/`
 - Frontend: `frontend/index.html`, `frontend/app.js`, `frontend/api.js`, `frontend/style.css`
-- Deployment: `.github/workflows/`, `fly.toml`, root `Dockerfile`, `backend/Dockerfile`
+- Deployment: `.github/workflows/`, `fly.toml`, root `Dockerfile`
 
 ## Implementation Principles
 

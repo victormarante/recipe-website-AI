@@ -9,15 +9,24 @@ import (
 	"net/http"
 	"strings"
 	"time"
+
+	"recipe-backend/internal/respond"
 )
+
+var now = time.Now
 
 // GenerateToken creates a signed HS256 JWT valid for 24 hours.
 func GenerateToken(subject, secret string) (string, error) {
+	return GenerateTokenWithExpiry(subject, secret, now().Add(24*time.Hour))
+}
+
+// GenerateTokenWithExpiry creates a signed HS256 JWT with a caller-supplied expiry.
+func GenerateTokenWithExpiry(subject, secret string, expiresAt time.Time) (string, error) {
 	header := base64url([]byte(`{"alg":"HS256","typ":"JWT"}`))
 
 	payload, err := json.Marshal(map[string]any{
 		"sub": subject,
-		"exp": time.Now().Add(24 * time.Hour).Unix(),
+		"exp": expiresAt.Unix(),
 	})
 	if err != nil {
 		return "", fmt.Errorf("marshal payload: %w", err)
@@ -34,18 +43,18 @@ func JWTAuth(secret string) func(http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			authHeader := r.Header.Get("Authorization")
 			if authHeader == "" {
-				http.Error(w, `{"error":"missing authorization header"}`, http.StatusUnauthorized)
+				respond.Error(w, http.StatusUnauthorized, "missing authorization header")
 				return
 			}
 
 			parts := strings.SplitN(authHeader, " ", 2)
 			if len(parts) != 2 || parts[0] != "Bearer" {
-				http.Error(w, `{"error":"invalid authorization format"}`, http.StatusUnauthorized)
+				respond.Error(w, http.StatusUnauthorized, "invalid authorization format")
 				return
 			}
 
-			if err := validateToken(parts[1], secret); err != nil {
-				http.Error(w, `{"error":"invalid or expired token"}`, http.StatusUnauthorized)
+			if err := ValidateToken(parts[1], secret); err != nil {
+				respond.Error(w, http.StatusUnauthorized, "invalid or expired token")
 				return
 			}
 
@@ -54,10 +63,23 @@ func JWTAuth(secret string) func(http.Handler) http.Handler {
 	}
 }
 
-func validateToken(tokenStr, secret string) error {
+// ValidateToken validates a signed HS256 JWT created by GenerateToken.
+func ValidateToken(tokenStr, secret string) error {
 	parts := strings.Split(tokenStr, ".")
 	if len(parts) != 3 {
 		return fmt.Errorf("malformed token")
+	}
+
+	headerBytes, err := base64.RawURLEncoding.DecodeString(parts[0])
+	if err != nil {
+		return fmt.Errorf("invalid header encoding")
+	}
+	var header map[string]any
+	if err := json.Unmarshal(headerBytes, &header); err != nil {
+		return fmt.Errorf("invalid header json")
+	}
+	if header["alg"] != "HS256" || header["typ"] != "JWT" {
+		return fmt.Errorf("invalid token header")
 	}
 
 	unsigned := parts[0] + "." + parts[1]
@@ -75,11 +97,16 @@ func validateToken(tokenStr, secret string) error {
 		return fmt.Errorf("invalid payload json")
 	}
 
+	sub, ok := claims["sub"].(string)
+	if !ok || sub == "" {
+		return fmt.Errorf("missing sub claim")
+	}
+
 	exp, ok := claims["exp"].(float64)
 	if !ok {
 		return fmt.Errorf("missing exp claim")
 	}
-	if time.Now().Unix() > int64(exp) {
+	if now().Unix() > int64(exp) {
 		return fmt.Errorf("token expired")
 	}
 

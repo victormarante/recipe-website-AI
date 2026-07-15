@@ -16,7 +16,7 @@ cd backend
 cp .env.example .env
 ```
 
-Edit `.env` before starting the server. `AUTH_USERNAME`, `AUTH_PASSWORD`, and `JWT_SECRET` are required; the app exits if any are empty.
+Edit `.env` before starting the server. `AUTH_USERNAME`, `JWT_SECRET`, and either `AUTH_PASSWORD` or `AUTH_PASSWORD_HASH` are required; the app exits if they are missing.
 
 ```env
 PORT=8080
@@ -25,6 +25,7 @@ DATABASE_PATH=./recipes.db
 CORS_ORIGIN=http://localhost:8080,http://localhost:8000
 AUTH_USERNAME=admin
 AUTH_PASSWORD=change-me
+AUTH_PASSWORD_HASH=
 JWT_SECRET=replace-with-a-long-random-secret
 ```
 
@@ -41,6 +42,7 @@ Health check:
 
 ```bash
 curl http://localhost:8080/health
+curl http://localhost:8080/ready
 ```
 
 ## Frontend
@@ -103,6 +105,8 @@ R2_BUCKET_NAME=
 R2_PUBLIC_URL=
 ```
 
+Leave all R2 variables empty to disable image storage. If any R2 variable is set, all R2 variables must be set.
+
 ## Common Commands
 
 ```bash
@@ -121,6 +125,8 @@ Frontend validation is currently manual:
 test -f frontend/index.html
 test -f frontend/app.js
 test -f frontend/api.js
+node --check frontend/api.js
+node --check frontend/app.js
 ```
 
 Then load the page in a browser and test login, recipe CRUD, search/filtering, and image behavior if R2 is configured.
