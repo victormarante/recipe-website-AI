@@ -1,209 +1,165 @@
 # Marellis Recipe Website
 
-A family hobby project for storing and sharing recipes. Vanilla JavaScript frontend with a production-ready Go REST API backed by SQLite.
+Marellis is a family recipe website for storing, browsing, and editing recipes. The project has a static vanilla JavaScript frontend and a Go REST API backed by SQLite.
 
-## Tech Stack
+## Current Features
 
-- **Frontend**: HTML5 · CSS3 · Vanilla JavaScript (ES6+)
-- **Backend**: Go 1.21+ · Chi router · SQLite database
-- **Deployment**: Docker · Fly.io
+- Sign-in with a single configured username and password
+- JWT-protected recipe and category API
+- Recipe create, read, update, and delete
+- Category browsing and filtering
+- Text search using SQL `LIKE` over recipe fields
+- Optional oven temperature and external/recipe links
+- Optional recipe image upload/delete through Cloudflare R2-compatible storage
+- Static frontend suitable for GitHub Pages
+- Backend deployment on Fly.io with SQLite on a mounted volume
 
-## Setup Guide
+## Architecture
 
-### Prerequisites
+- `frontend/` is a static site. It talks directly to the backend API from the browser.
+- `backend/` is a Go API using Chi, sqlx, and SQLite.
+- The backend runs migrations on startup from `backend/migrations/001_create_tables.sql`, then applies two ad hoc runtime column additions for `oven_temperature` and `image_url`.
+- The root `Dockerfile` is the Fly.io build path for the current root-level `fly.toml`.
+- GitHub Actions validate the backend/frontend and deploy the frontend/backend from `master`.
 
-- **Go 1.21+** — [Download](https://golang.org/dl/) and install
-- **Local web server** — Python, Node.js, or VS Code Live Server for frontend
+## Technology Stack
 
-### Install Go (Windows)
+- Frontend: HTML, CSS, vanilla JavaScript
+- Backend: Go module version `1.24`, Chi, sqlx, modernc SQLite, go-playground/validator
+- Auth: single shared username/password configured by environment, custom HS256 JWT middleware
+- Storage: SQLite file; optional Cloudflare R2-compatible object storage for images
+- Deployment: GitHub Pages for frontend, Fly.io for backend
 
-1. Download the `.msi` installer
-2. Run installer and follow prompts
-3. Verify in PowerShell: `go version`
+## Repository Layout
 
-### Quick Start
+```text
+.
+├── frontend/                 Static frontend
+├── backend/                  Go API
+│   ├── cmd/api/              API entry point
+│   ├── internal/             Config, DB, handlers, middleware, models, repository, router
+│   └── migrations/           SQL migration files
+├── .github/workflows/        Validation and deployment workflows
+├── Dockerfile                Current Fly.io backend Docker build from repo root
+├── fly.toml                  Fly.io app configuration
+├── SETUP.md                  Local setup details
+├── DEPLOYMENT.md             Deployment details
+├── AGENTS.md                 Codex repository instructions
+├── CLAUDE.md                 Claude-specific instructions
+└── TODO.md                   Proposed future work
+```
 
-**Terminal 1 — Backend:**
-```powershell
+## Quick Start
+
+Backend:
+
+```bash
 cd backend
+cp .env.example .env
+# edit AUTH_USERNAME, AUTH_PASSWORD, JWT_SECRET, and CORS_ORIGIN as needed
 go mod download
 go run cmd/api/main.go
 ```
-Server runs on `http://localhost:8080`
 
-**Terminal 2 — Frontend:**
-```powershell
-cd frontend
-python -m http.server 8000
-```
-Open `http://localhost:8000` in your browser
+Frontend:
 
-### Full Setup
-
-#### 1. Backend Setup
-
-```powershell
-cd backend
-```
-
-**Download dependencies:**
-```powershell
-go mod download
-go mod tidy
-```
-
-**Create environment file:**
-```powershell
-Copy-Item .env.example .env
-```
-
-Edit `.env`:
-```env
-PORT=8080
-APP_ENV=development
-DATABASE_PATH=./recipes.db
-CORS_ORIGIN=http://localhost:8080,https://yourusername.github.io
-```
-
-**Run server:**
-```powershell
-go run cmd/api/main.go
-# Or: make run (if make is installed)
-```
-
-**Test API:**
-```powershell
-curl http://localhost:8080/health
-```
-
-#### 2. Frontend Setup
-
-```powershell
+```bash
 cd frontend
 python -m http.server 8000
 ```
 
-Navigate to `http://localhost:8000`
+Open `http://localhost:8000`. The frontend uses `http://localhost:8080` outside GitHub Pages and `https://recipe-website-ai.fly.dev` on GitHub Pages.
 
-### API Testing Examples
+## Configuration
 
-**Get all recipes:**
-```powershell
-Invoke-RestMethod http://localhost:8080/api/v1/recipes
-```
+Required backend variables:
 
-**Filter by category:**
-```powershell
-Invoke-RestMethod "http://localhost:8080/api/v1/recipes?category=breakfast"
-```
+- `AUTH_USERNAME`
+- `AUTH_PASSWORD`
+- `JWT_SECRET`
 
-**Search recipes:**
-```powershell
-Invoke-RestMethod "http://localhost:8080/api/v1/recipes?q=pancake"
-```
+Common backend variables:
 
-**Create recipe:**
-```powershell
-$body = @{
-    title = "Test Pancakes"
-    description = "Fluffy pancakes"
-    categories = @("breakfast")
-    ingredients = @("1 cup flour", "2 eggs")
-    steps = @("Mix", "Cook")
-    links = @()
-} | ConvertTo-Json
+- `PORT` defaults to `8080`
+- `APP_ENV` defaults to `development`
+- `DATABASE_PATH` defaults to `./recipes.db`
+- `CORS_ORIGIN` defaults to `http://localhost:8080` if unset
 
-Invoke-RestMethod -Uri "http://localhost:8080/api/v1/recipes" `
-  -Method POST -Body $body -ContentType "application/json"
-```
+Optional R2 image storage variables:
 
-### Development Workflow
+- `R2_ACCOUNT_ID`
+- `R2_ACCESS_KEY_ID`
+- `R2_SECRET_ACCESS_KEY`
+- `R2_BUCKET_NAME`
+- `R2_PUBLIC_URL`
 
-**Backend changes:**
-1. Edit Go files
-2. Restart server (Ctrl+C, then run again)
+Note: `backend/.env.example` currently omits the optional R2 variables. This is tracked in `TODO.md`.
 
-**Frontend changes:**
-1. Edit HTML/CSS/JS
-2. Refresh browser (no restart needed)
+## Validation
 
-**Add migrations:**
-1. Create `.sql` file in `migrations/`
-2. Update `cmd/api/main.go`
-3. Restart server
+Backend:
 
-### Building for Production
-
-**Build binary:**
-```powershell
-go build -o bin/api.exe cmd/api/main.go
-.\bin\api.exe
-```
-
-**Build Docker image:**
-```powershell
+```bash
 cd backend
-docker build -t recipe-backend .
-docker run -p 8080:8080 recipe-backend
+gofmt -w ./...
+go build ./...
+go test ./...
+go vet ./...
 ```
 
-### Deploy to Fly.io
+Frontend:
 
-**Prerequisites:**
-- Fly CLI: [install guide](https://fly.io/docs/hands-on/install-flyctl/)
-- Account: `flyctl auth signup`
-
-**Deploy:**
-```powershell
-cd backend
-flyctl launch      # First time only
-flyctl deploy      # Deploy updates
-flyctl logs        # View logs
-flyctl open        # Open in browser
+```bash
+test -f frontend/index.html
+test -f frontend/app.js
+test -f frontend/api.js
 ```
 
-**After deployment:**
-```powershell
-# Update CORS for production
-flyctl secrets set CORS_ORIGIN="https://yourusername.github.io"
-```
+There is no frontend build step or package manager. Manual browser validation is currently expected for UI changes.
 
-Update `frontend/api.js`:
-```javascript
-const API_CONFIG = {
-  development: 'http://localhost:8080',
-  production: 'https://your-app.fly.dev', // Update this!
-};
-```
+## API Summary
 
-### Troubleshooting
+Public endpoints:
 
-| Issue | Solution |
-|-------|----------|
-| "go: command not found" | Install Go and restart terminal |
-| Port 8080 already in use | Stop other app or change `PORT` in `.env` |
-| CORS errors | Verify backend running + check `CORS_ORIGIN` in `.env` |
-| Database locked | Only one server instance should run at a time |
-| Dependencies not found | Run `go mod download && go mod tidy` |
+- `GET /health`
+- `POST /api/v1/auth/login`
 
-## API Endpoints
+JWT-protected endpoints:
 
-```
-GET    /health                    Health check
-GET    /api/v1/recipes           Get all recipes (supports ?category= and ?q=)
-POST   /api/v1/recipes           Create recipe
-GET    /api/v1/recipes/:id       Get recipe by ID
-PUT    /api/v1/recipes/:id       Update recipe
-DELETE /api/v1/recipes/:id       Delete recipe
-GET    /api/v1/categories        Get all categories
-```
+- `GET /api/v1/recipes`
+- `POST /api/v1/recipes`
+- `GET /api/v1/recipes/{id}`
+- `PUT /api/v1/recipes/{id}`
+- `DELETE /api/v1/recipes/{id}`
+- `POST /api/v1/recipes/{id}/image`
+- `DELETE /api/v1/recipes/{id}/image`
+- `GET /api/v1/categories`
+
+See [backend/README.md](backend/README.md) for request examples.
+
+## Deployment
+
+- Backend: Fly.io uses the root `fly.toml` and root `Dockerfile`.
+- Frontend: GitHub Pages deploys the contents of `frontend/`.
+- GitHub Actions currently deploy backend and frontend on every push to `master`; deployment is not gated on the validation workflow.
+
+See [DEPLOYMENT.md](DEPLOYMENT.md) for details.
+
+## Current Limitations
+
+- Authentication is a single shared account configured through environment variables.
+- JWTs are stored in browser `sessionStorage` and expire after 24 hours.
+- API error responses can expose internal error details in the `message` field.
+- Search is SQL `LIKE` search, not SQLite FTS.
+- No Go test files currently exist.
+- The backend uses one numbered migration plus runtime column additions.
+- Graceful HTTP shutdown is not implemented.
+- Database backup/restore and readiness procedures are not yet documented.
 
 ## Documentation
 
-- [Backend API Docs](backend/README.md) — Full API reference
-- [Frontend Docs](frontend/README.md) — Frontend architecture
-- [Tech Instructions](copilot-instructions.md) — Project specifications
-
----
-
-Made with ❤️ for family recipe sharing
+- [SETUP.md](SETUP.md) - local development setup
+- [DEPLOYMENT.md](DEPLOYMENT.md) - deployment and CI/CD notes
+- [backend/README.md](backend/README.md) - backend API and operations
+- [frontend/README.md](frontend/README.md) - frontend structure and manual validation
+- [TODO.md](TODO.md) - proposed future improvements

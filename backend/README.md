@@ -1,94 +1,135 @@
-# Recipe Backend API
+# Backend API
 
-Go REST API backend for the Marellis Recipe Website.
+Go REST API for the Marellis Recipe Website.
 
-## Features
+## Responsibilities
 
-- RESTful API with CRUD operations for recipes
-- Category management and filtering
-- Full-text search across recipes
-- SQLite database with JSON column support
-- CORS enabled for GitHub Pages frontend
-- Graceful shutdown
-- Health check endpoint
+- Load environment configuration
+- Open and migrate the SQLite database
+- Serve JWT-protected recipe, category, and image endpoints
+- Store recipe arrays as JSON text in SQLite
+- Optionally upload/delete recipe images in Cloudflare R2-compatible storage
 
-## Tech Stack
+## Structure
 
-- **Language**: Go 1.21+
-- **Router**: Chi v5
-- **Database**: SQLite with sqlx
-- **Validation**: go-playground/validator
-
-## Project Structure
-
-```
-recipe-backend/
-├── cmd/api/              # Application entry point
-├── internal/
-│   ├── config/          # Configuration management
-│   ├── database/        # Database connection
-│   ├── handlers/        # HTTP request handlers
-│   ├── middleware/      # CORS, logging middleware
-│   ├── models/          # Data models
-│   ├── repository/      # Database operations
-│   └── router/          # Route definitions
-├── migrations/          # SQL schema migrations
-└── go.mod
+```text
+backend/
+├── cmd/api/main.go
+├── internal/config/
+├── internal/database/
+├── internal/handlers/
+├── internal/middleware/
+├── internal/models/
+├── internal/repository/
+├── internal/router/
+├── migrations/
+├── go.mod
+└── Makefile
 ```
 
-## Prerequisites
+## Configuration
 
-- Go 1.21 or higher
-- SQLite support (included with modernc.org/sqlite - pure Go)
+Required:
 
-## Setup
+- `AUTH_USERNAME`
+- `AUTH_PASSWORD`
+- `JWT_SECRET`
 
-1. Clone the repository
-2. Copy `.env.example` to `.env` and update values:
-   ```bash
-   cp .env.example .env
-   ```
-3. Install dependencies:
-   ```bash
-   make deps
-   ```
+Common:
 
-## Running Locally
+- `PORT` defaults to `8080`
+- `APP_ENV` defaults to `development`
+- `DATABASE_PATH` defaults to `./recipes.db`
+- `CORS_ORIGIN` defaults to `http://localhost:8080`
+
+Optional R2 image storage:
+
+- `R2_ACCOUNT_ID`
+- `R2_ACCESS_KEY_ID`
+- `R2_SECRET_ACCESS_KEY`
+- `R2_BUCKET_NAME`
+- `R2_PUBLIC_URL`
+
+The app initializes an R2 client when account ID, access key, and secret key are present. Image uploads also need bucket and public URL values to be useful.
+
+## Run Locally
 
 ```bash
-# Run in development mode
-make run
-
-# Or directly with go
+cp .env.example .env
+go mod download
 go run cmd/api/main.go
 ```
 
-The server will start on `http://localhost:8080` (or the port specified in `.env`).
+Or:
 
-## API Endpoints
+```bash
+make run
+```
 
-### Recipes
+## Validation
 
-- `GET /api/v1/recipes` - List all recipes (supports `?category=` and `?q=` query params)
-- `GET /api/v1/recipes/:id` - Get single recipe
-- `POST /api/v1/recipes` - Create new recipe
-- `PUT /api/v1/recipes/:id` - Update recipe
-- `DELETE /api/v1/recipes/:id` - Delete recipe
+```bash
+gofmt -w ./...
+go build ./...
+go test ./...
+go vet ./...
+```
 
-### Categories
+There are currently no Go test files, so `go test ./...` only verifies that packages compile.
 
-- `GET /api/v1/categories` - Get all unique categories
+## API
 
-### Health Check
+Base path: `/api/v1`
 
-- `GET /health` - Health check endpoint
+Public:
 
-## Example Requests
+- `GET /health`
+- `POST /api/v1/auth/login`
+
+Protected by `Authorization: Bearer <token>`:
+
+- `GET /api/v1/recipes`
+- `POST /api/v1/recipes`
+- `GET /api/v1/recipes/{id}`
+- `PUT /api/v1/recipes/{id}`
+- `DELETE /api/v1/recipes/{id}`
+- `POST /api/v1/recipes/{id}/image`
+- `DELETE /api/v1/recipes/{id}/image`
+- `GET /api/v1/categories`
+
+### Login
+
+```bash
+curl -X POST http://localhost:8080/api/v1/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"username":"admin","password":"change-me"}'
+```
+
+Response:
+
+```json
+{"token":"<jwt>"}
+```
+
+### List Recipes
+
+```bash
+curl http://localhost:8080/api/v1/recipes \
+  -H "Authorization: Bearer $TOKEN"
+```
+
+Optional query parameters:
+
+- `category`
+- `q`
+
+Search uses SQL `LIKE` matching across title, description, categories, and ingredients. It is not SQLite FTS.
 
 ### Create Recipe
 
 ```bash
 curl -X POST http://localhost:8080/api/v1/recipes \
+  -H "Authorization: Bearer $TOKEN" \
   -H "Content-Type: application/json" \
   -d '{
     "title": "Classic Pancakes",
@@ -96,68 +137,36 @@ curl -X POST http://localhost:8080/api/v1/recipes \
     "categories": ["breakfast", "vegetarian"],
     "ingredients": ["1 cup flour", "2 eggs", "1 cup milk"],
     "steps": ["Mix ingredients", "Cook on griddle"],
-    "links": []
+    "links": [],
+    "oven_temperature": null
   }'
 ```
 
-### Get All Recipes
+### Upload Recipe Image
+
+Requires R2 configuration and an existing recipe.
 
 ```bash
-curl http://localhost:8080/api/v1/recipes
+curl -X POST http://localhost:8080/api/v1/recipes/1/image \
+  -H "Authorization: Bearer $TOKEN" \
+  -F "image=@photo.jpg"
 ```
 
-### Search Recipes
+The request is limited to 5 MB. The server checks the detected content type starts with `image/`.
+
+### Delete Recipe Image
 
 ```bash
-curl "http://localhost:8080/api/v1/recipes?q=pancake"
+curl -X DELETE http://localhost:8080/api/v1/recipes/1/image \
+  -H "Authorization: Bearer $TOKEN"
 ```
 
-### Filter by Category
+## Database
 
-```bash
-curl "http://localhost:8080/api/v1/recipes?category=breakfast"
-```
+`migrations/001_create_tables.sql` creates the base `recipes` table and indexes. On startup, `cmd/api/main.go` also adds `oven_temperature` and `image_url` columns if they are missing.
 
-## Testing
-
-```bash
-# Run all tests
-make test
-
-# Run tests with coverage
-make test-coverage
-```
-
-## Building
-
-```bash
-# Build binary
-make build
-
-# Run binary
-./bin/api
-```
+Future schema changes should use numbered migrations instead of additional runtime schema edits.
 
 ## Deployment
 
-### Fly.io
-
-1. Install flyctl: `https://fly.io/docs/hands-on/install-flyctl/`
-2. Login: `flyctl auth login`
-3. Initialize app: `flyctl launch`
-4. Deploy: `flyctl deploy`
-
-See `Dockerfile` for containerization setup.
-
-## Environment Variables
-
-| Variable | Description | Default |
-|----------|-------------|---------|
-| `PORT` | Server port | `8080` |
-| `APP_ENV` | Environment (development/production) | `development` |
-| `DATABASE_PATH` | SQLite database file path | `./recipes.db` |
-| `CORS_ORIGIN` | Allowed CORS origins (comma-separated) | `http://localhost:8080` |
-
-## License
-
-Personal hobby project for family recipe sharing.
+The active Fly.io deployment path uses the root `fly.toml` and root `Dockerfile`, not `backend/Dockerfile`.
