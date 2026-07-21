@@ -8,7 +8,7 @@ This is a reviewable roadmap of proposed future work. Items are not commitments 
 - [x] P1 Document image upload and delete endpoints in the backend API documentation.
 - [x] P1 Make `backend/.env.example` match all configuration read by the application, including optional R2 variables.
 - [x] P1 Add database readiness, backup, restore, and recovery documentation for the Fly.io SQLite volume.
-- [x] P1 Document current authentication limitations, including the single shared account model, JWT lifetime, and browser `sessionStorage` token storage.
+- [x] P1 Document current authentication limitations, including the single shared account model, JWT lifetime, and browser `localStorage` token storage.
 - [ ] P2 Add a short manual QA checklist for the deployed GitHub Pages and Fly.io environments.
 
 ## Critical Correctness And Security
@@ -38,7 +38,7 @@ This is a reviewable roadmap of proposed future work. Items are not commitments 
 
 - [x] P1 Document and review the single-user authentication model with the project owner.
 - [x] P1 Consider password hashing or externally managed auth if credentials ever move from environment variables into persistent storage.
-- [ ] P2 Add a logout/session-expiry UX note or test for expired 24-hour JWTs.
+- [ ] P2 Add a session-expiry UX note or test for expired 90-day JWTs.
 
 ## API Consistency
 

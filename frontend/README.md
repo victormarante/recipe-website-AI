@@ -16,7 +16,7 @@ frontend/
 ## Current Behavior
 
 - Shows a login overlay on first load
-- Stores the JWT in `sessionStorage`
+- Stores the JWT in `localStorage` so login persists across browser restarts until the token expires or the user logs out
 - Calls the backend API through `frontend/api.js`
 - Supports browsing categories, searching, viewing details, and recipe CRUD
 - Supports optional oven temperature

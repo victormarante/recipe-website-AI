@@ -18,15 +18,15 @@ const API_VERSION = '/api/v1';
 // ── Token helpers ──────────────────────────────────────────────────────────────
 
 function getToken() {
-  return sessionStorage.getItem(SESSION_KEY);
+  return localStorage.getItem(SESSION_KEY);
 }
 
 function setToken(token) {
-  sessionStorage.setItem(SESSION_KEY, token);
+  localStorage.setItem(SESSION_KEY, token);
 }
 
 function clearToken() {
-  sessionStorage.removeItem(SESSION_KEY);
+  localStorage.removeItem(SESSION_KEY);
 }
 
 // ── Error class ────────────────────────────────────────────────────────────────

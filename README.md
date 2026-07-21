@@ -151,7 +151,7 @@ See [DEPLOYMENT.md](DEPLOYMENT.md) for details.
 ## Current Limitations
 
 - Authentication is a single shared account configured through environment variables.
-- JWTs are stored in browser `sessionStorage` and expire after 24 hours.
+- JWTs are stored in browser `localStorage` and expire after 90 days.
 - Search is SQL `LIKE` search, not SQLite FTS.
 - Authentication is still a single shared account, not multi-user authorization.
 - Database backup/restore is documented at a basic operational level, but should be rehearsed before relying on it for production recovery.

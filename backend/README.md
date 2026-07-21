@@ -114,6 +114,8 @@ Response:
 {"token":"<jwt>"}
 ```
 
+The returned JWT is valid for 90 days.
+
 ### List Recipes
 
 ```bash

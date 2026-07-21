@@ -71,3 +71,26 @@ func TestJWTAuthExpiredAndValidToken(t *testing.T) {
 		t.Fatalf("expected 204, got %d", rr.Code)
 	}
 }
+
+func TestGenerateTokenUsesNinetyDayExpiry(t *testing.T) {
+	originalNow := now
+	defer func() { now = originalNow }()
+
+	base := time.Date(2026, time.July, 21, 12, 0, 0, 0, time.UTC)
+	now = func() time.Time { return base }
+
+	token, err := GenerateToken("admin", "secret")
+	if err != nil {
+		t.Fatalf("GenerateToken: %v", err)
+	}
+
+	now = func() time.Time { return base.Add(89 * 24 * time.Hour) }
+	if err := ValidateToken(token, "secret"); err != nil {
+		t.Fatalf("expected token to still be valid before 90 days: %v", err)
+	}
+
+	now = func() time.Time { return base.Add(91 * 24 * time.Hour) }
+	if err := ValidateToken(token, "secret"); err == nil {
+		t.Fatal("expected token to expire after 90 days")
+	}
+}

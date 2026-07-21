@@ -15,9 +15,11 @@ import (
 
 var now = time.Now
 
-// GenerateToken creates a signed HS256 JWT valid for 24 hours.
+const tokenLifetime = 90 * 24 * time.Hour
+
+// GenerateToken creates a signed HS256 JWT valid for 90 days.
 func GenerateToken(subject, secret string) (string, error) {
-	return GenerateTokenWithExpiry(subject, secret, now().Add(24*time.Hour))
+	return GenerateTokenWithExpiry(subject, secret, now().Add(tokenLifetime))
 }
 
 // GenerateTokenWithExpiry creates a signed HS256 JWT with a caller-supplied expiry.
