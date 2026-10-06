@@ -11,6 +11,8 @@ let state = {
   pendingRemoveImage: false,
 };
 
+let isPopping = false;
+
 // ── DOM refs ─────────────────────────────────────────────────────────────────
 
 const $ = (sel, ctx = document) => ctx.querySelector(sel);
@@ -299,6 +301,7 @@ function showDetail(id) {
   }
 
   showView('detail');
+  if (!isPopping) history.pushState({ screen: 'detail', id: recipe.id, category: state.activeCategory }, '');
 }
 
 // ── View switching ────────────────────────────────────────────────────────────
@@ -338,6 +341,7 @@ function selectCategory(cat) {
   renderRecipeList();
   showView('list');
   closeSidebar();
+  if (!isPopping) history.pushState({ screen: 'list', category: cat }, '');
 }
 
 function showCategoriesHome() {
@@ -346,6 +350,7 @@ function showCategoriesHome() {
   searchInput.value = '';
   renderCategoryCards();
   showView('categories');
+  if (!isPopping) history.pushState({ screen: 'categories' }, '');
 }
 
 function renderCategoryCards() {
@@ -779,6 +784,9 @@ function capitalize(str) {
 // ── Mobile sidebar drawer ─────────────────────────────────────────────────────
 
 function toggleSidebar() {
+  if ($('#recipe-browser').classList.contains('hidden')) {
+    selectCategory(null);
+  }
   const sidebar = $('#sidebar');
   const overlay = $('#drawer-overlay');
   const isOpen = sidebar.classList.toggle('open');
@@ -794,13 +802,6 @@ function closeSidebar() {
 
 function wireEvents() {
   $('#logo').addEventListener('click', showCategoriesHome);
-
-  $('#btn-logout').addEventListener('click', () => {
-    window.API.clearToken();
-    location.reload();
-  });
-
-  $('#login-form').addEventListener('submit', handleLoginSubmit);
 
   $('#btn-add-recipe').addEventListener('click', openAddModal);
   $('#btn-cancel').addEventListener('click', closeModal);
@@ -830,7 +831,7 @@ function wireEvents() {
   makeDraggable(document.getElementById('ingredients-list'));
   makeDraggable(document.getElementById('steps-list'));
 
-  $('#btn-back').addEventListener('click', () => showView('list'));
+  $('#btn-back').addEventListener('click', () => history.back());
 
   $('#btn-confirm-delete').addEventListener('click', confirmDelete);
   $('#btn-cancel-delete').addEventListener('click', closeDeleteModal);
@@ -860,24 +861,31 @@ function wireEvents() {
   });
 }
 
-// ── Auth ──────────────────────────────────────────────────────────────────────
+// ── Navigation (History) ──────────────────────────────────────────────────────
 
-async function handleLoginSubmit(e) {
-  e.preventDefault();
-  const username = $('#login-username').value.trim();
-  const password = $('#login-password').value;
-  const errorEl = $('#login-error');
-  errorEl.classList.add('hidden');
+window.addEventListener('popstate', e => {
+  isPopping = true;
+  closeSidebar();
+  state.searchQuery = '';
+  searchInput.value = '';
 
-  try {
-    const { token } = await window.API.auth.login(username, password);
-    window.API.setToken(token);
-    $('#login-overlay').classList.add('hidden');
-    await loadAndRender();
-  } catch {
-    errorEl.classList.remove('hidden');
+  const target = e.state || { screen: 'categories' };
+  if (target.screen === 'detail') {
+    const recipe = state.recipes.find(r => r.id === target.id);
+    if (recipe) {
+      state.activeCategory = target.category ?? null;
+      showDetail(recipe.id);
+    } else {
+      showCategoriesHome();
+    }
+  } else if (target.screen === 'list') {
+    selectCategory(target.category ?? null);
+  } else {
+    showCategoriesHome();
   }
-}
+
+  isPopping = false;
+});
 
 // ── Data loading ──────────────────────────────────────────────────────────────
 
@@ -897,10 +905,8 @@ async function loadAndRender() {
 
 async function init() {
   wireEvents();
-  if (window.API.getToken()) {
-    $('#login-overlay').classList.add('hidden');
-    await loadAndRender();
-  }
+  await loadAndRender();
+  history.replaceState({ screen: 'categories' }, '');
 }
 
 document.addEventListener('DOMContentLoaded', () => init());

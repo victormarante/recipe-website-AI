@@ -40,7 +40,7 @@
             <input
               type="search"
               id="search-input"
-              placeholder="Search recipes…"
+              placeholder="Search"
               aria-label="Search recipes"
             />
           </div>
@@ -48,7 +48,6 @@
             <svg class="md-icon" aria-hidden="true"><use href="#icon-add"/></svg>
             <span class="btn-label">Add Recipe</span>
           </button>
-          <button id="btn-logout" class="btn btn-ghost btn-logout-header">Log out</button>
         </div>
       </div>
     </header>
@@ -179,24 +178,6 @@
     <footer>
       <p>&copy; 2026 Marellis</p>
     </footer>
-
-    <!-- Login overlay -->
-    <div id="login-overlay" class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="login-title">
-      <div class="modal modal-sm">
-        <h2 id="login-title">🍽 Marellis</h2>
-        <p class="login-subtitle">Sign in to continue</p>
-        <form id="login-form" novalidate>
-          <label for="login-username">Username</label>
-          <input type="text" id="login-username" placeholder="Username" required autocomplete="username" />
-          <label for="login-password">Password</label>
-          <input type="password" id="login-password" placeholder="Password" required autocomplete="current-password" />
-          <p id="login-error" class="form-error hidden" role="alert">Incorrect username or password.</p>
-          <div class="form-actions">
-            <button type="submit" class="btn btn-primary" style="width:100%;justify-content:center">Sign In</button>
-          </div>
-        </form>
-      </div>
-    </div>
 
     <script src="api.js"></script>
     <script src="app.js"></script>

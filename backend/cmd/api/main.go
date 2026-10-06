@@ -35,9 +35,8 @@ func main() {
 	repo := repository.NewRecipeRepository(db)
 	recipeHandler := handlers.NewRecipeHandler(repo, cfg)
 	categoryHandler := handlers.NewCategoryHandler(repo)
-	authHandler := handlers.NewAuthHandler(cfg)
 
-	r := router.New(recipeHandler, categoryHandler, authHandler, cfg, db)
+	r := router.New(recipeHandler, categoryHandler, cfg, db)
 
 	server := &http.Server{
 		Addr:              ":" + cfg.Port,

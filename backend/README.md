@@ -6,7 +6,7 @@ Go REST API for the Marellis Recipe Website.
 
 - Load environment configuration
 - Open and migrate the SQLite database
-- Serve JWT-protected recipe, category, and image endpoints
+- Serve public recipe, category, and image endpoints (no authentication)
 - Store recipe arrays as JSON text in SQLite
 - Optionally upload/delete recipe images in Cloudflare R2-compatible storage
 
@@ -29,12 +29,6 @@ backend/
 
 ## Configuration
 
-Required:
-
-- `AUTH_USERNAME`
-- `AUTH_PASSWORD` or `AUTH_PASSWORD_HASH`
-- `JWT_SECRET`
-
 Common:
 
 - `PORT` defaults to `8080`
@@ -51,8 +45,6 @@ Optional R2 image storage:
 - `R2_PUBLIC_URL`
 
 The app initializes image storage only when all R2 variables are present. A partial R2 configuration fails startup. Leave all R2 variables empty to disable image endpoints.
-
-For production, prefer `AUTH_PASSWORD_HASH` with a bcrypt hash. `AUTH_PASSWORD` remains supported for local development and existing deployments.
 
 ## Run Locally
 
@@ -77,20 +69,16 @@ go test ./...
 go vet ./...
 ```
 
-The test suite covers repository behavior, migrations, authentication middleware, handlers, and router behavior.
+The test suite covers repository behavior, migrations, handlers, and router behavior.
 
 ## API
 
 Base path: `/api/v1`
 
-Public:
+All endpoints are public (no authentication):
 
 - `GET /health`
 - `GET /ready`
-- `POST /api/v1/auth/login`
-
-Protected by `Authorization: Bearer <token>`:
-
 - `GET /api/v1/recipes`
 - `POST /api/v1/recipes`
 - `GET /api/v1/recipes/{id}`
@@ -100,27 +88,10 @@ Protected by `Authorization: Bearer <token>`:
 - `DELETE /api/v1/recipes/{id}/image`
 - `GET /api/v1/categories`
 
-### Login
-
-```bash
-curl -X POST http://localhost:8080/api/v1/auth/login \
-  -H "Content-Type: application/json" \
-  -d '{"username":"admin","password":"change-me"}'
-```
-
-Response:
-
-```json
-{"token":"<jwt>"}
-```
-
-The returned JWT is valid for 90 days.
-
 ### List Recipes
 
 ```bash
-curl http://localhost:8080/api/v1/recipes \
-  -H "Authorization: Bearer $TOKEN"
+curl http://localhost:8080/api/v1/recipes
 ```
 
 Optional query parameters:
@@ -134,7 +105,6 @@ Search uses SQL `LIKE` matching across title, description, categories, and ingre
 
 ```bash
 curl -X POST http://localhost:8080/api/v1/recipes \
-  -H "Authorization: Bearer $TOKEN" \
   -H "Content-Type: application/json" \
   -d '{
     "title": "Classic Pancakes",
@@ -153,7 +123,6 @@ Requires R2 configuration and an existing recipe.
 
 ```bash
 curl -X POST http://localhost:8080/api/v1/recipes/1/image \
-  -H "Authorization: Bearer $TOKEN" \
   -F "image=@photo.jpg"
 ```
 
@@ -164,8 +133,7 @@ Images are stored under `recipes/{id}` in the configured bucket. Uploading a new
 ### Delete Recipe Image
 
 ```bash
-curl -X DELETE http://localhost:8080/api/v1/recipes/1/image \
-  -H "Authorization: Bearer $TOKEN"
+curl -X DELETE http://localhost:8080/api/v1/recipes/1/image
 ```
 
 ## Database

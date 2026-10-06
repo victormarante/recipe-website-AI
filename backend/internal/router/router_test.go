@@ -34,100 +34,45 @@ func setupRouter(t *testing.T) http.Handler {
 		Environment:  "test",
 		DatabasePath: ":memory:",
 		CORSOrigins:  []string{"*"},
-		AuthUsername: "admin",
-		AuthPassword: "password",
-		JWTSecret:    "test-secret",
 	}
 
 	return router.New(
 		handlers.NewRecipeHandler(repo, cfg),
 		handlers.NewCategoryHandler(repo),
-		handlers.NewAuthHandler(cfg),
 		cfg,
 		db,
 	)
 }
 
-func authToken(t *testing.T, h http.Handler) string {
-	t.Helper()
-
-	body := strings.NewReader(`{"username":"admin","password":"password"}`)
-	req := httptest.NewRequest(http.MethodPost, "/api/v1/auth/login", body)
-	req.Header.Set("Content-Type", "application/json")
-	rr := httptest.NewRecorder()
-	h.ServeHTTP(rr, req)
-	if rr.Code != http.StatusOK {
-		t.Fatalf("login status %d body %s", rr.Code, rr.Body.String())
-	}
-	var response struct {
-		Token string `json:"token"`
-	}
-	if err := json.NewDecoder(rr.Body).Decode(&response); err != nil {
-		t.Fatalf("decode login: %v", err)
-	}
-	return response.Token
-}
-
-func authorizedRequest(method, path, token string, body *strings.Reader) *http.Request {
-	if body == nil {
-		body = strings.NewReader("")
-	}
-	req := httptest.NewRequest(method, path, body)
-	req.Header.Set("Authorization", "Bearer "+token)
-	req.Header.Set("Content-Type", "application/json")
-	return req
-}
-
-func TestProtectedRoutesRejectUnauthenticatedRequests(t *testing.T) {
+func TestRecipeListingInvalidJSONValidationAndMissingRecipe(t *testing.T) {
 	h := setupRouter(t)
+
 	rr := httptest.NewRecorder()
 	h.ServeHTTP(rr, httptest.NewRequest(http.MethodGet, "/api/v1/recipes", nil))
-
-	if rr.Code != http.StatusUnauthorized {
-		t.Fatalf("expected 401, got %d", rr.Code)
-	}
-	assertJSONError(t, rr, "missing authorization header")
-}
-
-func TestLoginInvalidCredentials(t *testing.T) {
-	h := setupRouter(t)
-	rr := httptest.NewRecorder()
-	req := httptest.NewRequest(http.MethodPost, "/api/v1/auth/login", strings.NewReader(`{"username":"admin","password":"bad"}`))
-	req.Header.Set("Content-Type", "application/json")
-	h.ServeHTTP(rr, req)
-
-	if rr.Code != http.StatusUnauthorized {
-		t.Fatalf("expected 401, got %d", rr.Code)
-	}
-	assertJSONError(t, rr, "invalid credentials")
-}
-
-func TestAuthenticatedRecipeListingInvalidJSONValidationAndMissingRecipe(t *testing.T) {
-	h := setupRouter(t)
-	token := authToken(t, h)
-
-	rr := httptest.NewRecorder()
-	h.ServeHTTP(rr, authorizedRequest(http.MethodGet, "/api/v1/recipes", token, nil))
 	if rr.Code != http.StatusOK {
 		t.Fatalf("list expected 200, got %d body %s", rr.Code, rr.Body.String())
 	}
 
 	rr = httptest.NewRecorder()
-	h.ServeHTTP(rr, authorizedRequest(http.MethodPost, "/api/v1/recipes", token, strings.NewReader(`{`)))
+	req := httptest.NewRequest(http.MethodPost, "/api/v1/recipes", strings.NewReader(`{`))
+	req.Header.Set("Content-Type", "application/json")
+	h.ServeHTTP(rr, req)
 	if rr.Code != http.StatusBadRequest {
 		t.Fatalf("invalid json expected 400, got %d", rr.Code)
 	}
 	assertJSONError(t, rr, "Invalid request body")
 
 	rr = httptest.NewRecorder()
-	h.ServeHTTP(rr, authorizedRequest(http.MethodPost, "/api/v1/recipes", token, strings.NewReader(`{"title":""}`)))
+	req = httptest.NewRequest(http.MethodPost, "/api/v1/recipes", strings.NewReader(`{"title":""}`))
+	req.Header.Set("Content-Type", "application/json")
+	h.ServeHTTP(rr, req)
 	if rr.Code != http.StatusBadRequest {
 		t.Fatalf("validation expected 400, got %d", rr.Code)
 	}
 	assertJSONError(t, rr, "Validation failed")
 
 	rr = httptest.NewRecorder()
-	h.ServeHTTP(rr, authorizedRequest(http.MethodGet, "/api/v1/recipes/999", token, nil))
+	h.ServeHTTP(rr, httptest.NewRequest(http.MethodGet, "/api/v1/recipes/999", nil))
 	if rr.Code != http.StatusNotFound {
 		t.Fatalf("missing expected 404, got %d", rr.Code)
 	}
@@ -136,7 +81,6 @@ func TestAuthenticatedRecipeListingInvalidJSONValidationAndMissingRecipe(t *test
 
 func TestCategoryJSONEscapingAndReadiness(t *testing.T) {
 	h := setupRouter(t)
-	token := authToken(t, h)
 
 	payload := []byte(`{
 		"title":"Quoted",
@@ -148,7 +92,6 @@ func TestCategoryJSONEscapingAndReadiness(t *testing.T) {
 	}`)
 	rr := httptest.NewRecorder()
 	req := httptest.NewRequest(http.MethodPost, "/api/v1/recipes", bytes.NewReader(payload))
-	req.Header.Set("Authorization", "Bearer "+token)
 	req.Header.Set("Content-Type", "application/json")
 	h.ServeHTTP(rr, req)
 	if rr.Code != http.StatusCreated {
@@ -156,7 +99,7 @@ func TestCategoryJSONEscapingAndReadiness(t *testing.T) {
 	}
 
 	rr = httptest.NewRecorder()
-	h.ServeHTTP(rr, authorizedRequest(http.MethodGet, "/api/v1/categories", token, nil))
+	h.ServeHTTP(rr, httptest.NewRequest(http.MethodGet, "/api/v1/categories", nil))
 	if rr.Code != http.StatusOK {
 		t.Fatalf("categories expected 200, got %d body %s", rr.Code, rr.Body.String())
 	}
@@ -177,10 +120,9 @@ func TestCategoryJSONEscapingAndReadiness(t *testing.T) {
 
 func TestImageEndpointUnavailableWithoutStorage(t *testing.T) {
 	h := setupRouter(t)
-	token := authToken(t, h)
 
 	rr := httptest.NewRecorder()
-	h.ServeHTTP(rr, authorizedRequest(http.MethodPost, "/api/v1/recipes/1/image", token, strings.NewReader("")))
+	h.ServeHTTP(rr, httptest.NewRequest(http.MethodPost, "/api/v1/recipes/1/image", strings.NewReader("")))
 	if rr.Code != http.StatusServiceUnavailable {
 		t.Fatalf("expected 503, got %d", rr.Code)
 	}

@@ -44,7 +44,7 @@ There is no frontend build step. For frontend changes:
 
 - Verify `frontend/index.html`, `frontend/app.js`, and `frontend/api.js` still exist.
 - Run a local static server when behavior changes.
-- Manually check login, recipe CRUD, search/filtering, image behavior if relevant, and responsive layout.
+- Manually check recipe CRUD, search/filtering, image behavior if relevant, and responsive layout.
 
 ## Database Migration Rules
 
@@ -56,14 +56,12 @@ There is no frontend build step. For frontend changes:
 ## API Change Rules
 
 - Treat `/api/v1` paths and JSON response fields as a contract.
-- Keep authentication requirements explicit in docs and examples.
 - Update backend docs and frontend API calls together when endpoint behavior changes.
-- Distinguish public endpoints from JWT-protected endpoints.
+- The API has no authentication; all `/api/v1` endpoints are public.
 
 ## Security Constraints
 
 - Never commit `.env`, secrets, tokens, database files, or private credentials.
-- Keep `AUTH_USERNAME`, `AUTH_PASSWORD`, and `JWT_SECRET` required for backend startup.
 - Do not expose internal error details in new API responses.
 - Treat R2 credentials and Fly/GitHub tokens as secrets.
 

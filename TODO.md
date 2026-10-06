@@ -34,15 +34,8 @@ This is a reviewable roadmap of proposed future work. Items are not commitments 
 - [x] P1 Add migration tests or startup checks that catch schema drift.
 - [ ] P2 Review whether category filtering should normalize category values instead of relying on JSON text matching.
 
-## Authentication
-
-- [x] P1 Document and review the single-user authentication model with the project owner.
-- [x] P1 Consider password hashing or externally managed auth if credentials ever move from environment variables into persistent storage.
-- [ ] P2 Add a session-expiry UX note or test for expired 90-day JWTs.
-
 ## API Consistency
 
-- [ ] P2 Keep future protected endpoint examples consistent by including bearer-token usage.
 - [ ] P2 Keep image upload and delete endpoint documentation aligned with future R2 behavior changes.
 - [x] P1 Replace manual category JSON construction with standard JSON encoding.
 - [x] P1 Make error response formats consistent between middleware, category handlers, and recipe handlers.
@@ -75,5 +68,4 @@ This is a reviewable roadmap of proposed future work. Items are not commitments 
 
 - [ ] P2 Add SQLite FTS if real full-text search is desired.
 - [ ] P2 Add structured request logging with request IDs.
-- [ ] P2 Add basic rate limiting for login attempts.
 - [ ] P2 Add an admin-friendly export/import flow for recipes and images.

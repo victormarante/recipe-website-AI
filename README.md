@@ -4,8 +4,7 @@ Marellis is a family recipe website for storing, browsing, and editing recipes. 
 
 ## Current Features
 
-- Sign-in with a single configured username and password
-- JWT-protected recipe and category API
+- Public recipe and category API (no authentication)
 - Recipe create, read, update, and delete
 - Category browsing and filtering
 - Text search using SQL `LIKE` over recipe fields
@@ -26,7 +25,6 @@ Marellis is a family recipe website for storing, browsing, and editing recipes. 
 
 - Frontend: HTML, CSS, vanilla JavaScript
 - Backend: Go module version `1.24`, Chi, sqlx, modernc SQLite, go-playground/validator
-- Auth: single shared username/password configured by environment, custom HS256 JWT middleware
 - Storage: SQLite file; optional Cloudflare R2-compatible object storage for images
 - Deployment: GitHub Pages for frontend, Fly.io for backend
 
@@ -56,7 +54,7 @@ Backend:
 ```bash
 cd backend
 cp .env.example .env
-# edit AUTH_USERNAME, AUTH_PASSWORD, JWT_SECRET, and CORS_ORIGIN as needed
+# edit CORS_ORIGIN as needed
 go mod download
 go run cmd/api/main.go
 ```
@@ -72,12 +70,6 @@ Open `http://localhost:8000`. The frontend uses `http://localhost:8080` outside 
 
 ## Configuration
 
-Required backend variables:
-
-- `AUTH_USERNAME`
-- `AUTH_PASSWORD` or `AUTH_PASSWORD_HASH`
-- `JWT_SECRET`
-
 Common backend variables:
 
 - `PORT` defaults to `8080`
@@ -92,8 +84,6 @@ Optional R2 image storage variables:
 - `R2_SECRET_ACCESS_KEY`
 - `R2_BUCKET_NAME`
 - `R2_PUBLIC_URL`
-
-For production, prefer `AUTH_PASSWORD_HASH` with a bcrypt hash and leave `AUTH_PASSWORD` empty. Plain `AUTH_PASSWORD` remains supported for local development and backwards-compatible deployments.
 
 ## Validation
 
@@ -121,14 +111,10 @@ There is no frontend build step or package manager. Manual browser validation is
 
 ## API Summary
 
-Public endpoints:
+All endpoints are public (no authentication):
 
 - `GET /health`
 - `GET /ready`
-- `POST /api/v1/auth/login`
-
-JWT-protected endpoints:
-
 - `GET /api/v1/recipes`
 - `POST /api/v1/recipes`
 - `GET /api/v1/recipes/{id}`
@@ -150,10 +136,8 @@ See [DEPLOYMENT.md](DEPLOYMENT.md) for details.
 
 ## Current Limitations
 
-- Authentication is a single shared account configured through environment variables.
-- JWTs are stored in browser `localStorage` and expire after 90 days.
+- The API has no authentication; all endpoints are public. This is an intentional phase-1 change, with further access-control decisions tracked separately.
 - Search is SQL `LIKE` search, not SQLite FTS.
-- Authentication is still a single shared account, not multi-user authorization.
 - Database backup/restore is documented at a basic operational level, but should be rehearsed before relying on it for production recovery.
 
 ## Documentation

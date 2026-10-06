@@ -18,7 +18,6 @@ import (
 func New(
 	recipeHandler *handlers.RecipeHandler,
 	categoryHandler *handlers.CategoryHandler,
-	authHandler *handlers.AuthHandler,
 	cfg *config.Config,
 	db *sqlx.DB,
 ) *chi.Mux {
@@ -53,23 +52,15 @@ func New(
 
 	// API v1 routes
 	r.Route("/api/v1", func(r chi.Router) {
-		// Public: login
-		r.Post("/auth/login", authHandler.Login)
+		r.Get("/recipes", recipeHandler.GetRecipes)
+		r.Post("/recipes", recipeHandler.CreateRecipe)
+		r.Get("/recipes/{id}", recipeHandler.GetRecipe)
+		r.Put("/recipes/{id}", recipeHandler.UpdateRecipe)
+		r.Delete("/recipes/{id}", recipeHandler.DeleteRecipe)
+		r.Post("/recipes/{id}/image", recipeHandler.UploadRecipeImage)
+		r.Delete("/recipes/{id}/image", recipeHandler.DeleteRecipeImage)
 
-		// Protected routes — require valid JWT
-		r.Group(func(r chi.Router) {
-			r.Use(customMiddleware.JWTAuth(cfg.JWTSecret))
-
-			r.Get("/recipes", recipeHandler.GetRecipes)
-			r.Post("/recipes", recipeHandler.CreateRecipe)
-			r.Get("/recipes/{id}", recipeHandler.GetRecipe)
-			r.Put("/recipes/{id}", recipeHandler.UpdateRecipe)
-			r.Delete("/recipes/{id}", recipeHandler.DeleteRecipe)
-			r.Post("/recipes/{id}/image", recipeHandler.UploadRecipeImage)
-			r.Delete("/recipes/{id}/image", recipeHandler.DeleteRecipeImage)
-
-			r.Get("/categories", categoryHandler.GetCategories)
-		})
+		r.Get("/categories", categoryHandler.GetCategories)
 	})
 
 	return r

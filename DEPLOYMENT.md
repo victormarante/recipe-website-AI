@@ -18,13 +18,8 @@ Because `fly.toml` is root-level and has an empty `[build]` section, `flyctl dep
 Required Fly secrets:
 
 ```bash
-flyctl secrets set AUTH_USERNAME="..."
-flyctl secrets set AUTH_PASSWORD_HASH='...'
-flyctl secrets set JWT_SECRET="..."
 flyctl secrets set CORS_ORIGIN="https://<owner>.github.io"
 ```
-
-`AUTH_PASSWORD` is still supported for backwards compatibility. Prefer `AUTH_PASSWORD_HASH` for production. Generate a bcrypt hash locally with a trusted tool and do not commit it.
 
 Optional image storage secrets:
 

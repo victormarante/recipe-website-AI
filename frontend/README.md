@@ -15,8 +15,6 @@ frontend/
 
 ## Current Behavior
 
-- Shows a login overlay on first load
-- Stores the JWT in `localStorage` so login persists across browser restarts until the token expires or the user logs out
 - Calls the backend API through `frontend/api.js`
 - Supports browsing categories, searching, viewing details, and recipe CRUD
 - Supports optional oven temperature
@@ -29,8 +27,6 @@ frontend/
 
 - Local/non-GitHub Pages: `http://localhost:8080`
 - GitHub Pages: `https://recipe-website-ai.fly.dev`
-
-All recipe and category requests include `Authorization: Bearer <token>` when a token is present. Login is sent to `/api/v1/auth/login`.
 
 ## Run Locally
 
@@ -50,8 +46,7 @@ There is no automated frontend test suite today. For frontend changes, check at 
 - `node --check frontend/api.js`
 - `node --check frontend/app.js`
 - The page loads without console errors
-- Login works with configured backend credentials
-- Recipes load after login
+- Recipes load on page load
 - Search and category filtering work
 - Create, edit, and delete work
 - Image upload/delete work when R2 is configured, and fail clearly when it is not

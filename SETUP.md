@@ -16,17 +16,13 @@ cd backend
 cp .env.example .env
 ```
 
-Edit `.env` before starting the server. `AUTH_USERNAME`, `JWT_SECRET`, and either `AUTH_PASSWORD` or `AUTH_PASSWORD_HASH` are required; the app exits if they are missing.
+Edit `.env` before starting the server if the defaults do not fit your setup.
 
 ```env
 PORT=8080
 APP_ENV=development
 DATABASE_PATH=./recipes.db
 CORS_ORIGIN=http://localhost:8080,http://localhost:8000
-AUTH_USERNAME=admin
-AUTH_PASSWORD=change-me
-AUTH_PASSWORD_HASH=
-JWT_SECRET=replace-with-a-long-random-secret
 ```
 
 Install dependencies and run:
@@ -52,33 +48,20 @@ cd frontend
 python -m http.server 8000
 ```
 
-Open `http://localhost:8000`. The page displays a login overlay and connects to `http://localhost:8080` when not hosted on GitHub Pages.
+Open `http://localhost:8000`. The page connects to `http://localhost:8080` when not hosted on GitHub Pages.
 
-## Login And API Testing
-
-Get a JWT:
-
-```bash
-TOKEN=$(
-  curl -s http://localhost:8080/api/v1/auth/login \
-    -H "Content-Type: application/json" \
-    -d '{"username":"admin","password":"change-me"}' \
-  | sed -n 's/.*"token":"\([^"]*\)".*/\1/p'
-)
-```
+## API Testing
 
 List recipes:
 
 ```bash
-curl http://localhost:8080/api/v1/recipes \
-  -H "Authorization: Bearer $TOKEN"
+curl http://localhost:8080/api/v1/recipes
 ```
 
 Create a recipe:
 
 ```bash
 curl -X POST http://localhost:8080/api/v1/recipes \
-  -H "Authorization: Bearer $TOKEN" \
   -H "Content-Type: application/json" \
   -d '{
     "title": "Test Pancakes",
@@ -129,14 +112,12 @@ node --check frontend/api.js
 node --check frontend/app.js
 ```
 
-Then load the page in a browser and test login, recipe CRUD, search/filtering, and image behavior if R2 is configured.
+Then load the page in a browser and test recipe CRUD, search/filtering, and image behavior if R2 is configured.
 
 ## Troubleshooting
 
 | Issue | Check |
 | --- | --- |
-| Backend exits on startup | Required auth variables are missing or empty |
 | CORS errors | Include the frontend origin in `CORS_ORIGIN` |
-| Unauthorized API responses | Log in first and send `Authorization: Bearer <token>` |
 | Image upload returns `503` | R2 configuration is missing or incomplete |
 | SQLite database locked | Run only one backend instance against the same SQLite file |
