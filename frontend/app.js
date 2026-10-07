@@ -60,7 +60,7 @@ function renderCategories() {
   const allLi = document.createElement('li');
   const allA  = document.createElement('a');
   allA.href = '#';
-  allA.textContent = 'All recipes';
+  allA.textContent = 'Alla recept';
   allA.className = state.activeCategory === null ? 'active' : '';
   allA.addEventListener('click', e => { e.preventDefault(); selectCategory(null); });
   allLi.appendChild(allA);
@@ -111,11 +111,11 @@ function renderRecipeList() {
   }
 
   if (state.searchQuery) {
-    listHeading.textContent = `Search: "${state.searchQuery}"`;
+    listHeading.textContent = `Sök: "${state.searchQuery}"`;
   } else if (state.activeCategory) {
     listHeading.textContent = capitalize(state.activeCategory);
   } else {
-    listHeading.textContent = 'All Recipes';
+    listHeading.textContent = 'Alla recept';
   }
 }
 
@@ -144,13 +144,13 @@ function buildCard(recipe) {
 
   const editBtn = document.createElement('button');
   editBtn.className = 'btn-icon';
-  editBtn.title = 'Edit recipe';
+  editBtn.title = 'Redigera recept';
   editBtn.appendChild(icon('edit'));
   editBtn.addEventListener('click', e => { e.stopPropagation(); openEditModal(recipe.id); });
 
   const delBtn = document.createElement('button');
   delBtn.className = 'btn-icon';
-  delBtn.title = 'Delete recipe';
+  delBtn.title = 'Ta bort recept';
   delBtn.appendChild(icon('delete'));
   delBtn.addEventListener('click', e => { e.stopPropagation(); openDeleteModal(recipe.id); });
 
@@ -197,12 +197,12 @@ function showDetail(id) {
   detailActions.className = 'detail-actions';
   const editBtn = document.createElement('button');
   editBtn.className = 'btn-icon';
-  editBtn.title = 'Edit recipe';
+  editBtn.title = 'Redigera recept';
   editBtn.appendChild(icon('edit'));
   editBtn.addEventListener('click', () => openEditModal(recipe.id));
   const delBtn = document.createElement('button');
   delBtn.className = 'btn-icon';
-  delBtn.title = 'Delete recipe';
+  delBtn.title = 'Ta bort recept';
   delBtn.appendChild(icon('delete'));
   delBtn.addEventListener('click', () => openDeleteModal(recipe.id));
   detailActions.appendChild(editBtn);
@@ -215,7 +215,7 @@ function showDetail(id) {
 
   const ingSection = document.createElement('section');
   const ingH3 = document.createElement('h3');
-  ingH3.textContent = 'Ingredients';
+  ingH3.textContent = 'Ingredienser';
   const ingUl = document.createElement('ul');
   (recipe.ingredients || []).forEach(ing => {
     const li = document.createElement('li');
@@ -227,13 +227,13 @@ function showDetail(id) {
 
   const stepsSection = document.createElement('section');
   const stepsH3 = document.createElement('h3');
-  stepsH3.textContent = 'Steps';
+  stepsH3.textContent = 'Instruktioner';
   const stepsUl = document.createElement('ul');
   stepsUl.style.listStyle = 'none';
   stepsUl.style.padding = '0';
   (recipe.steps || []).forEach((step, i) => {
     const li = document.createElement('li');
-    li.textContent = `Step ${i + 1}: ${step}`;
+    li.textContent = `Steg ${i + 1}: ${step}`;
     stepsUl.appendChild(li);
   });
   stepsSection.appendChild(stepsH3);
@@ -259,7 +259,7 @@ function showDetail(id) {
   if (recipe.oven_temperature != null) {
     const ovenSection = document.createElement('section');
     const ovenH3 = document.createElement('h3');
-    ovenH3.textContent = 'Oven Temperature';
+    ovenH3.textContent = 'Ugnstemperatur';
     const ovenP = document.createElement('p');
     ovenP.textContent = `${recipe.oven_temperature}°C`;
     ovenSection.appendChild(ovenH3);
@@ -271,7 +271,7 @@ function showDetail(id) {
   if (links.length > 0) {
     const linksSection = document.createElement('section');
     const linksH3 = document.createElement('h3');
-    linksH3.textContent = 'Related Links';
+    linksH3.textContent = 'Relaterade länkar';
     const linksDiv = document.createElement('div');
     linksDiv.className = 'detail-links';
 
@@ -280,7 +280,7 @@ function showDetail(id) {
       if (link.type === 'recipe') {
         const linked = state.recipes.find(r => r.id === link.linked_recipe_id);
         a.appendChild(icon('link'));
-        a.appendChild(document.createTextNode(' ' + (linked ? linked.title : 'Unknown recipe')));
+        a.appendChild(document.createTextNode(' ' + (linked ? linked.title : 'Okänt recept')));
         a.href = '#';
         a.addEventListener('click', e => {
           e.preventDefault();
@@ -383,7 +383,7 @@ function renderCategoryCards() {
 
     const count = document.createElement('p');
     count.className = 'cat-count';
-    count.textContent = `${catRecipes.length} recipe${catRecipes.length !== 1 ? 's' : ''}`;
+    count.textContent = `${catRecipes.length} recept`;
 
     const preview = document.createElement('ul');
     preview.className = 'cat-preview';
@@ -417,7 +417,7 @@ function getCategoryEmoji(cat) {
 function openAddModal() {
   state.editingId = null;
   state.pendingRemoveImage = false;
-  $('#modal-title').textContent = 'Add Recipe';
+  $('#modal-title').textContent = 'Lägg till recept';
   recipeForm.reset();
   $('#form-id').value = '';
   clearDynamicList('ingredients-list');
@@ -435,7 +435,7 @@ function openEditModal(id) {
   if (!recipe) return;
   state.editingId = id;
   state.pendingRemoveImage = false;
-  $('#modal-title').textContent = 'Edit Recipe';
+  $('#modal-title').textContent = 'Redigera recept';
   $('#form-id').value = id;
   $('#form-title').value = recipe.title;
   $('#form-description').value = recipe.description || '';
@@ -486,7 +486,7 @@ function addIngredientRow(value) {
 
 function addStepRow(value) {
   const list = document.getElementById('steps-list');
-  const row = buildTextRow(value, 'Step description', () => row.remove());
+  const row = buildTextRow(value, 'Beskriv steget', () => row.remove());
   list.appendChild(row);
   if (!value) row.querySelector('input').focus();
 }
@@ -501,7 +501,7 @@ function addLinkRow(link = {}) {
   ['external', 'recipe'].forEach(t => {
     const opt = document.createElement('option');
     opt.value = t;
-    opt.textContent = t === 'external' ? 'External URL' : 'Recipe';
+    opt.textContent = t === 'external' ? 'Extern URL' : 'Recept';
     typeSelect.appendChild(opt);
   });
   typeSelect.value = link.type || 'external';
@@ -517,7 +517,7 @@ function addLinkRow(link = {}) {
   if (link.type === 'recipe') {
     const linked = state.recipes.find(r => r.id === link.linked_recipe_id);
     urlInput.value = linked ? linked.title : '';
-    urlInput.placeholder = 'Type recipe name…';
+    urlInput.placeholder = 'Skriv receptnamn…';
     urlInput.setAttribute('list', dlId);
     state.recipes.forEach(r => {
       const opt = document.createElement('option');
@@ -532,12 +532,12 @@ function addLinkRow(link = {}) {
   const labelInput = document.createElement('input');
   labelInput.type = 'text';
   labelInput.className = 'link-label';
-  labelInput.placeholder = 'Label (optional)';
+  labelInput.placeholder = 'Etikett (valfritt)';
   labelInput.value = link.label || '';
 
   typeSelect.addEventListener('change', () => {
     if (typeSelect.value === 'recipe') {
-      urlInput.placeholder = 'Type recipe name…';
+      urlInput.placeholder = 'Skriv receptnamn…';
       urlInput.value = '';
       datalist.innerHTML = '';
       state.recipes.forEach(r => {
@@ -558,7 +558,7 @@ function addLinkRow(link = {}) {
   const removeBtn = document.createElement('button');
   removeBtn.type = 'button';
   removeBtn.className = 'btn-icon';
-  removeBtn.title = 'Remove';
+  removeBtn.title = 'Ta bort';
   removeBtn.appendChild(icon('close'));
   removeBtn.addEventListener('click', () => row.remove());
 
@@ -610,7 +610,7 @@ function buildTextRow(value, placeholder, onRemove) {
   const handle = document.createElement('span');
   handle.className = 'drag-handle';
   handle.textContent = '⠿';
-  handle.title = 'Drag to reorder';
+  handle.title = 'Dra för att ändra ordning';
 
   const input = document.createElement('input');
   input.type = 'text';
@@ -620,7 +620,7 @@ function buildTextRow(value, placeholder, onRemove) {
   const removeBtn = document.createElement('button');
   removeBtn.type = 'button';
   removeBtn.className = 'btn-icon';
-  removeBtn.title = 'Remove';
+  removeBtn.title = 'Ta bort';
   removeBtn.appendChild(icon('close'));
   removeBtn.addEventListener('click', onRemove);
 
@@ -670,17 +670,17 @@ async function handleFormSubmit(e) {
   clearFormError();
 
   const title = $('#form-title').value.trim();
-  if (!title) { showFormError('Please enter a recipe title.'); $('#form-title').focus(); return; }
+  if (!title) { showFormError('Ange en titel för receptet.'); $('#form-title').focus(); return; }
 
   const categories = $('#form-categories').value
     .split(',').map(c => c.trim().toLowerCase()).filter(Boolean);
-  if (categories.length === 0) { showFormError('Please enter at least one category.'); $('#form-categories').focus(); return; }
+  if (categories.length === 0) { showFormError('Ange minst en kategori.'); $('#form-categories').focus(); return; }
 
   const ingredients = collectDynamicValues('ingredients-list');
-  if (ingredients.length === 0) { showFormError('Please add at least one ingredient.'); return; }
+  if (ingredients.length === 0) { showFormError('Lägg till minst en ingrediens.'); return; }
 
   const steps = collectDynamicValues('steps-list');
-  if (steps.length === 0) { showFormError('Please add at least one step.'); return; }
+  if (steps.length === 0) { showFormError('Lägg till minst ett steg.'); return; }
 
   const links = collectLinks();
 
@@ -719,7 +719,7 @@ async function handleFormSubmit(e) {
       if (updated) showDetail(updated.id);
     }
   } catch (err) {
-    showFormError(err.message || 'Failed to save recipe. Please try again.');
+    showFormError(err.message || 'Kunde inte spara receptet. Försök igen.');
   }
 }
 
@@ -737,7 +737,7 @@ function openDeleteModal(id) {
   const blockMsg = $('#delete-block-msg');
   const confirmBtn = $('#btn-confirm-delete');
   if (linkedBy.length > 0) {
-    blockMsg.textContent = `Cannot delete: linked by ${linkedBy.map(r => r.title).join(', ')}`;
+    blockMsg.textContent = `Kan inte tas bort: länkas från ${linkedBy.map(r => r.title).join(', ')}`;
     blockMsg.classList.remove('hidden');
     confirmBtn.disabled = true;
   } else {
@@ -771,7 +771,7 @@ async function confirmDelete() {
     showView('list');
   } catch (err) {
     const blockMsg = $('#delete-block-msg');
-    blockMsg.textContent = err.message || 'Failed to delete recipe.';
+    blockMsg.textContent = err.message || 'Kunde inte ta bort receptet.';
     blockMsg.classList.remove('hidden');
   }
 }
@@ -787,10 +787,6 @@ function capitalize(str) {
 function toggleSidebar() {
   const sidebar = $('#sidebar');
   const overlay = $('#drawer-overlay');
-  const willOpen = !sidebar.classList.contains('open');
-  if (willOpen) {
-    selectCategory(null);
-  }
   const isOpen = sidebar.classList.toggle('open');
   overlay.classList.toggle('hidden', !isOpen);
 }

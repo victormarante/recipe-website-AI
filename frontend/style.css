@@ -107,7 +107,7 @@ header h1 .md-icon { width: 1.6rem; height: 1.6rem; }
   justify-content: center;
 }
 .menu-toggle:hover { background: rgba(255,255,255,.15); }
-.menu-toggle .md-icon { width: 1.5rem; height: 1.5rem; }
+.menu-toggle .md-icon, .btn-icon.menu-toggle .md-icon { width: 2.25rem; height: 2.25rem; fill: currentColor; }
 
 .header-actions {
   display: flex;
@@ -715,7 +715,11 @@ footer {
     gap: 1rem;
   }
 
-  .layout { flex-direction: column; padding: 1rem; gap: 1rem; }
+  .layout { flex-direction: column; align-items: stretch; padding: 1rem; gap: 1rem; }
+
+  /* Keep the drawer reachable from the categories home (browser is hidden there) */
+  .layout.hidden { display: flex !important; padding: 0; }
+  .layout.hidden #main-content { display: none; }
 
   /* Sidebar becomes a fixed drawer on mobile */
   #sidebar {

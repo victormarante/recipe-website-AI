@@ -47,13 +47,13 @@ async function request(endpoint, options = {}) {
     const data = await response.json();
 
     if (!response.ok) {
-      throw new APIError(data.error || 'Request failed', response.status, data);
+      throw new APIError(data.error || 'Förfrågan misslyckades', response.status, data);
     }
 
     return data;
   } catch (error) {
     if (error instanceof APIError) throw error;
-    throw new APIError(`Network error: ${error.message}`, 0, null);
+    throw new APIError(`Nätverksfel: ${error.message}`, 0, null);
   }
 }
 
@@ -100,7 +100,7 @@ const RecipeAPI = {
     });
     if (!response.ok) {
       const data = await response.json().catch(() => ({}));
-      throw new APIError(data.error || 'Upload failed', response.status, data);
+      throw new APIError(data.error || 'Uppladdningen misslyckades', response.status, data);
     }
     return response.json();
   },
