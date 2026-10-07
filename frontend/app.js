@@ -60,8 +60,9 @@ function renderCategories() {
   const allLi = document.createElement('li');
   const allA  = document.createElement('a');
   allA.href = '#';
-  allA.textContent = '← Categories';
-  allA.addEventListener('click', e => { e.preventDefault(); showCategoriesHome(); });
+  allA.textContent = 'All recipes';
+  allA.className = state.activeCategory === null ? 'active' : '';
+  allA.addEventListener('click', e => { e.preventDefault(); selectCategory(null); });
   allLi.appendChild(allA);
   categoryList.appendChild(allLi);
 
@@ -784,11 +785,12 @@ function capitalize(str) {
 // ── Mobile sidebar drawer ─────────────────────────────────────────────────────
 
 function toggleSidebar() {
-  if ($('#recipe-browser').classList.contains('hidden')) {
-    selectCategory(null);
-  }
   const sidebar = $('#sidebar');
   const overlay = $('#drawer-overlay');
+  const willOpen = !sidebar.classList.contains('open');
+  if (willOpen) {
+    selectCategory(null);
+  }
   const isOpen = sidebar.classList.toggle('open');
   overlay.classList.toggle('hidden', !isOpen);
 }

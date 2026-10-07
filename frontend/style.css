@@ -64,7 +64,8 @@ header {
 .header-content {
   max-width: 1200px;
   margin: 0 auto;
-  display: flex;
+  display: grid;
+  grid-template-columns: auto 1fr auto;
   align-items: center;
   gap: .75rem;
 }
@@ -76,6 +77,7 @@ header h1 {
   display: flex;
   align-items: center;
   gap: .4rem;
+  justify-self: center;
   cursor: pointer;
 }
 header h1:hover { opacity: .85; }
@@ -132,7 +134,7 @@ header h1 .md-icon { width: 1.6rem; height: 1.6rem; }
   color: var(--clr-sidebar-tx);
   font-size: .9rem;
   font-family: inherit;
-  width: 220px;
+  width: 73px;
   transition: var(--transition);
   outline: none;
 }
@@ -140,7 +142,7 @@ header h1 .md-icon { width: 1.6rem; height: 1.6rem; }
 #search-input:focus {
   background: rgba(255,255,255,.22);
   border-color: rgba(255,255,255,.5);
-  width: 270px;
+  width: 90px;
 }
 
 /* ── Buttons ──────────────────────────────────────── */
@@ -235,12 +237,6 @@ header h1 .md-icon { width: 1.6rem; height: 1.6rem; }
 .categories-home-inner {
   max-width: 1200px;
   margin: 0 auto;
-}
-
-.categories-home-inner h2 {
-  font-size: 1.6rem;
-  font-weight: 700;
-  margin-bottom: 1.5rem;
 }
 
 .category-home-grid {

@@ -33,8 +33,12 @@
         <button class="btn-icon menu-toggle" id="btn-menu-toggle" aria-label="Toggle menu" title="Menu">
           <svg class="md-icon" aria-hidden="true"><use href="#icon-menu"/></svg>
         </button>
-        <h1 id="logo">🍽 Marellis</h1>
+        <h1 id="logo">marellis</h1>
         <div class="header-actions">
+          <button id="btn-add-recipe" class="btn btn-primary">
+            <svg class="md-icon" aria-hidden="true"><use href="#icon-add"/></svg>
+            <span class="btn-label">Add Recipe</span>
+          </button>
           <div class="search-wrapper">
             <svg class="md-icon search-icon" aria-hidden="true"><use href="#icon-search"/></svg>
             <input
@@ -44,10 +48,6 @@
               aria-label="Search recipes"
             />
           </div>
-          <button id="btn-add-recipe" class="btn btn-primary">
-            <svg class="md-icon" aria-hidden="true"><use href="#icon-add"/></svg>
-            <span class="btn-label">Add Recipe</span>
-          </button>
         </div>
       </div>
     </header>
@@ -58,7 +58,6 @@
     <!-- Categories home (default landing view) -->
     <section id="view-categories-home">
       <div class="categories-home-inner">
-        <h2>Browse by Category</h2>
         <div id="category-cards-grid" class="category-home-grid"></div>
         <p id="no-categories-msg" class="empty-msg hidden">No categories yet. Add a recipe to get started!</p>
       </div>
