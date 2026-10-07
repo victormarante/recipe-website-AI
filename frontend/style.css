@@ -92,7 +92,7 @@ header h1:hover { opacity: .85; }
 
 header h1 .md-icon { width: 1.6rem; height: 1.6rem; }
 
-.menu-toggle {
+.btn-icon.menu-toggle {
   display: none;
   color: var(--clr-sidebar-tx);
   background: transparent;
@@ -740,7 +740,7 @@ footer {
     box-shadow: var(--shadow-lg);
   }
 
-  .menu-toggle { display: inline-flex; }
+  .btn-icon.menu-toggle { display: inline-flex; }
 
   #btn-add-recipe { display: none; }
   .fab { display: flex; }

@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="sv">
+<html lang="en">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -30,7 +30,7 @@
 
     <header>
       <div class="header-content">
-        <button class="btn-icon menu-toggle" id="btn-menu-toggle" aria-label="Växla meny" title="Meny">
+        <button class="btn-icon menu-toggle" id="btn-menu-toggle" aria-label="Toggle menu" title="Menu">
           <svg class="md-icon" aria-hidden="true"><use href="#icon-menu"/></svg>
         </button>
         <div class="logo-group">
@@ -39,15 +39,14 @@
         <div class="header-actions">
           <button id="btn-add-recipe" class="btn btn-primary">
             <svg class="md-icon" aria-hidden="true"><use href="#icon-add"/></svg>
-            <span class="btn-label">Lägg till recept</span>
+            <span class="btn-label">Add Recipe</span>
           </button>
           <div class="search-wrapper">
             <svg class="md-icon search-icon" aria-hidden="true"><use href="#icon-search"/></svg>
             <input
               type="search"
               id="search-input"
-              placeholder="Sök"
-              aria-label="Sök recept"
+                      aria-label="Search recipes"
             />
           </div>
         </div>
@@ -61,7 +60,7 @@
     <section id="view-categories-home">
       <div class="categories-home-inner">
         <div id="category-cards-grid" class="category-home-grid"></div>
-        <p id="no-categories-msg" class="empty-msg hidden">Inga kategorier än. Lägg till ett recept för att komma igång!</p>
+        <p id="no-categories-msg" class="empty-msg hidden">No categories yet. Add a recipe to get started!</p>
       </div>
     </section>
 
@@ -69,7 +68,7 @@
     <div class="layout hidden" id="recipe-browser">
       <!-- Sidebar: categories -->
       <aside id="sidebar">
-        <h2>Kategorier</h2>
+        <h2>Categories</h2>
         <ul id="category-list" role="list"></ul>
       </aside>
 
@@ -78,17 +77,17 @@
         <!-- Recipe list view -->
         <section id="view-list" class="view active">
           <div class="view-header">
-            <h2 id="list-heading">Alla recept</h2>
+            <h2 id="list-heading">All Recipes</h2>
           </div>
           <div id="recipe-cards" class="recipe-grid"></div>
-          <p id="no-recipes-msg" class="empty-msg hidden">Inga recept hittades.</p>
+          <p id="no-recipes-msg" class="empty-msg hidden">No recipes found.</p>
         </section>
 
         <!-- Recipe detail view -->
         <section id="view-detail" class="view hidden">
           <button class="btn btn-back" id="btn-back">
             <svg class="md-icon" aria-hidden="true"><use href="#icon-arrow_back"/></svg>
-            Tillbaka
+            Back
           </button>
           <article id="recipe-detail"></article>
         </section>
@@ -96,66 +95,66 @@
     </div>
 
     <!-- Floating Action Button (mobile) -->
-    <button id="fab-add" class="fab" aria-label="Lägg till recept" title="Lägg till recept">
+    <button id="fab-add" class="fab" aria-label="Add Recipe" title="Add Recipe">
       <svg class="md-icon" aria-hidden="true"><use href="#icon-add"/></svg>
     </button>
 
     <!-- Add / Edit Recipe Modal -->
     <div id="modal-overlay" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="modal-title">
       <div class="modal">
-        <h2 id="modal-title">Lägg till recept</h2>
+        <h2 id="modal-title">Add Recipe</h2>
         <form id="recipe-form" novalidate>
           <input type="hidden" id="form-id" />
 
-          <label for="form-title">Titel <span class="required">*</span></label>
-          <input type="text" id="form-title" placeholder="Receptets titel" required />
+          <label for="form-title">Title <span class="required">*</span></label>
+          <input type="text" id="form-title" placeholder="Recipe title" required />
 
-          <label for="form-description">Beskrivning</label>
-          <textarea id="form-description" rows="3" placeholder="En kort beskrivning av receptet"></textarea>
+          <label for="form-description">Description</label>
+          <textarea id="form-description" rows="3" placeholder="A short description of the recipe"></textarea>
 
-          <label for="form-oven-temp">Ugnstemperatur <small>(valfritt)</small></label>
+          <label for="form-oven-temp">Oven Temperature <small>(optional)</small></label>
           <div class="oven-temp-row">
             <input type="number" id="form-oven-temp" placeholder="°C" min="0" max="500" />
-            <button type="button" class="btn btn-ghost" id="btn-convert-temp">från °F</button>
+            <button type="button" class="btn btn-ghost" id="btn-convert-temp">from °F</button>
           </div>
 
-          <label for="form-categories">Kategorier <span class="required">*</span> <small>(kommaseparerade)</small></label>
-          <input type="text" id="form-categories" placeholder="t.ex. Frukost, Vegetariskt" required />
+          <label for="form-categories">Categories <span class="required">*</span> <small>(comma-separated)</small></label>
+          <input type="text" id="form-categories" placeholder="e.g. Breakfast, Vegetarian" required />
 
-          <label for="form-tags">Taggar <small>(kommaseparerade, sökbara)</small></label>
-          <input type="text" id="form-tags" placeholder="t.ex. snabbt, starkt, husmanskost" />
+          <label for="form-tags">Tags <small>(comma-separated, searchable)</small></label>
+          <input type="text" id="form-tags" placeholder="e.g. quick, spicy, comfort-food" />
 
-          <label>Ingredienser <span class="required">*</span></label>
+          <label>Ingredients <span class="required">*</span></label>
           <div id="ingredients-list" class="dynamic-list"></div>
           <button type="button" class="btn btn-secondary" id="btn-add-ingredient">
-            <svg class="md-icon" aria-hidden="true"><use href="#icon-add"/></svg> Lägg till ingrediens
+            <svg class="md-icon" aria-hidden="true"><use href="#icon-add"/></svg> Add Ingredient
           </button>
 
-          <label>Steg <span class="required">*</span></label>
+          <label>Steps <span class="required">*</span></label>
           <div id="steps-list" class="dynamic-list"></div>
           <button type="button" class="btn btn-secondary" id="btn-add-step">
-            <svg class="md-icon" aria-hidden="true"><use href="#icon-add"/></svg> Lägg till steg
+            <svg class="md-icon" aria-hidden="true"><use href="#icon-add"/></svg> Add Step
           </button>
 
-          <label>Länkar <small>(valfritt)</small></label>
+          <label>Links <small>(optional)</small></label>
           <div id="links-list" class="dynamic-list"></div>
           <button type="button" class="btn btn-secondary" id="btn-add-link">
-            <svg class="md-icon" aria-hidden="true"><use href="#icon-add_link"/></svg> Lägg till länk
+            <svg class="md-icon" aria-hidden="true"><use href="#icon-add_link"/></svg> Add Link
           </button>
 
-          <label for="form-image">Foto <small>(valfritt, max 5 MB)</small></label>
+          <label for="form-image">Photo <small>(optional, max 5 MB)</small></label>
           <input type="file" id="form-image" accept="image/*" />
           <div id="form-image-preview" class="form-image-preview hidden">
-            <img id="form-image-preview-img" src="" alt="Nuvarande foto" />
-            <button type="button" class="btn btn-ghost btn-sm" id="btn-remove-image">Ta bort foto</button>
+            <img id="form-image-preview-img" src="" alt="Current photo" />
+            <button type="button" class="btn btn-ghost btn-sm" id="btn-remove-image">Remove photo</button>
           </div>
 
           <p id="form-error" class="form-error hidden" role="alert"></p>
           <div class="form-actions">
             <button type="submit" class="btn btn-primary" id="btn-save">
-              <svg class="md-icon" aria-hidden="true"><use href="#icon-save"/></svg> Spara recept
+              <svg class="md-icon" aria-hidden="true"><use href="#icon-save"/></svg> Save Recipe
             </button>
-            <button type="button" class="btn btn-ghost" id="btn-cancel">Avbryt</button>
+            <button type="button" class="btn btn-ghost" id="btn-cancel">Cancel</button>
           </div>
         </form>
       </div>
@@ -164,14 +163,14 @@
     <!-- Delete confirmation modal -->
     <div id="delete-overlay" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="delete-title">
       <div class="modal modal-sm">
-        <h2 id="delete-title">Ta bort recept</h2>
-        <p>Är du säker på att du vill ta bort <strong id="delete-recipe-name"></strong>? Det går inte att ångra.</p>
+        <h2 id="delete-title">Delete Recipe</h2>
+        <p>Are you sure you want to delete <strong id="delete-recipe-name"></strong>? This cannot be undone.</p>
         <p id="delete-block-msg" class="form-error hidden" role="alert"></p>
         <div class="form-actions">
           <button class="btn btn-danger" id="btn-confirm-delete">
-            <svg class="md-icon" aria-hidden="true"><use href="#icon-delete"/></svg> Ta bort
+            <svg class="md-icon" aria-hidden="true"><use href="#icon-delete"/></svg> Delete
           </button>
-          <button class="btn btn-ghost" id="btn-cancel-delete">Avbryt</button>
+          <button class="btn btn-ghost" id="btn-cancel-delete">Cancel</button>
         </div>
       </div>
     </div>
@@ -180,6 +179,7 @@
       <p>&copy; 2026 Marellis</p>
     </footer>
 
+    <script src="i18n.js"></script>
     <script src="api.js"></script>
     <script src="app.js"></script>
   </body>

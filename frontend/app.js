@@ -60,7 +60,7 @@ function renderCategories() {
   const allLi = document.createElement('li');
   const allA  = document.createElement('a');
   allA.href = '#';
-  allA.textContent = 'Alla recept';
+  allA.textContent = t('All recipes');
   allA.className = state.activeCategory === null ? 'active' : '';
   allA.addEventListener('click', e => { e.preventDefault(); selectCategory(null); });
   allLi.appendChild(allA);
@@ -70,7 +70,7 @@ function renderCategories() {
     const li = document.createElement('li');
     const a  = document.createElement('a');
     a.href = '#';
-    a.textContent = capitalize(cat);
+    a.textContent = categoryLabel(cat);
     a.className = state.activeCategory === cat ? 'active' : '';
     a.addEventListener('click', e => { e.preventDefault(); selectCategory(cat); });
     li.appendChild(a);
@@ -91,7 +91,7 @@ function getFilteredRecipes() {
     recipes = recipes.filter(r =>
       r.title.toLowerCase().includes(q) ||
       (r.description || '').toLowerCase().includes(q) ||
-      (r.categories || []).some(c => c.toLowerCase().includes(q)) ||
+      (r.categories || []).some(c => c.toLowerCase().includes(q) || categoryLabel(c).toLowerCase().includes(q)) ||
       (r.ingredients || []).some(i => i.toLowerCase().includes(q))
     );
   }
@@ -111,11 +111,11 @@ function renderRecipeList() {
   }
 
   if (state.searchQuery) {
-    listHeading.textContent = `Sök: "${state.searchQuery}"`;
+    listHeading.textContent = `${t('Search')}: "${state.searchQuery}"`;
   } else if (state.activeCategory) {
-    listHeading.textContent = capitalize(state.activeCategory);
+    listHeading.textContent = categoryLabel(state.activeCategory);
   } else {
-    listHeading.textContent = 'Alla recept';
+    listHeading.textContent = t('All recipes');
   }
 }
 
@@ -135,7 +135,7 @@ function buildCard(recipe) {
   (recipe.categories || []).forEach(c => {
     const span = document.createElement('span');
     span.className = 'tag';
-    span.textContent = capitalize(c);
+    span.textContent = categoryLabel(c);
     tags.appendChild(span);
   });
 
@@ -144,13 +144,13 @@ function buildCard(recipe) {
 
   const editBtn = document.createElement('button');
   editBtn.className = 'btn-icon';
-  editBtn.title = 'Redigera recept';
+  editBtn.title = t('Edit recipe');
   editBtn.appendChild(icon('edit'));
   editBtn.addEventListener('click', e => { e.stopPropagation(); openEditModal(recipe.id); });
 
   const delBtn = document.createElement('button');
   delBtn.className = 'btn-icon';
-  delBtn.title = 'Ta bort recept';
+  delBtn.title = t('Delete recipe');
   delBtn.appendChild(icon('delete'));
   delBtn.addEventListener('click', e => { e.stopPropagation(); openDeleteModal(recipe.id); });
 
@@ -189,7 +189,7 @@ function showDetail(id) {
   (recipe.categories || []).forEach(c => {
     const span = document.createElement('span');
     span.className = 'tag';
-    span.textContent = capitalize(c);
+    span.textContent = categoryLabel(c);
     meta.appendChild(span);
   });
 
@@ -197,12 +197,12 @@ function showDetail(id) {
   detailActions.className = 'detail-actions';
   const editBtn = document.createElement('button');
   editBtn.className = 'btn-icon';
-  editBtn.title = 'Redigera recept';
+  editBtn.title = t('Edit recipe');
   editBtn.appendChild(icon('edit'));
   editBtn.addEventListener('click', () => openEditModal(recipe.id));
   const delBtn = document.createElement('button');
   delBtn.className = 'btn-icon';
-  delBtn.title = 'Ta bort recept';
+  delBtn.title = t('Delete recipe');
   delBtn.appendChild(icon('delete'));
   delBtn.addEventListener('click', () => openDeleteModal(recipe.id));
   detailActions.appendChild(editBtn);
@@ -215,7 +215,7 @@ function showDetail(id) {
 
   const ingSection = document.createElement('section');
   const ingH3 = document.createElement('h3');
-  ingH3.textContent = 'Ingredienser';
+  ingH3.textContent = t('Ingredients');
   const ingUl = document.createElement('ul');
   (recipe.ingredients || []).forEach(ing => {
     const li = document.createElement('li');
@@ -227,13 +227,13 @@ function showDetail(id) {
 
   const stepsSection = document.createElement('section');
   const stepsH3 = document.createElement('h3');
-  stepsH3.textContent = 'Instruktioner';
+  stepsH3.textContent = t('Steps');
   const stepsUl = document.createElement('ul');
   stepsUl.style.listStyle = 'none';
   stepsUl.style.padding = '0';
   (recipe.steps || []).forEach((step, i) => {
     const li = document.createElement('li');
-    li.textContent = `Steg ${i + 1}: ${step}`;
+    li.textContent = `${t('Step')} ${i + 1}: ${step}`;
     stepsUl.appendChild(li);
   });
   stepsSection.appendChild(stepsH3);
@@ -259,7 +259,7 @@ function showDetail(id) {
   if (recipe.oven_temperature != null) {
     const ovenSection = document.createElement('section');
     const ovenH3 = document.createElement('h3');
-    ovenH3.textContent = 'Ugnstemperatur';
+    ovenH3.textContent = t('Oven Temperature');
     const ovenP = document.createElement('p');
     ovenP.textContent = `${recipe.oven_temperature}°C`;
     ovenSection.appendChild(ovenH3);
@@ -271,7 +271,7 @@ function showDetail(id) {
   if (links.length > 0) {
     const linksSection = document.createElement('section');
     const linksH3 = document.createElement('h3');
-    linksH3.textContent = 'Relaterade länkar';
+    linksH3.textContent = t('Related Links');
     const linksDiv = document.createElement('div');
     linksDiv.className = 'detail-links';
 
@@ -280,7 +280,7 @@ function showDetail(id) {
       if (link.type === 'recipe') {
         const linked = state.recipes.find(r => r.id === link.linked_recipe_id);
         a.appendChild(icon('link'));
-        a.appendChild(document.createTextNode(' ' + (linked ? linked.title : 'Okänt recept')));
+        a.appendChild(document.createTextNode(' ' + (linked ? linked.title : t('Unknown recipe'))));
         a.href = '#';
         a.addEventListener('click', e => {
           e.preventDefault();
@@ -379,11 +379,11 @@ function renderCategoryCards() {
     emoji.textContent = getCategoryEmoji(cat);
 
     const h3 = document.createElement('h3');
-    h3.textContent = capitalize(cat);
+    h3.textContent = categoryLabel(cat);
 
     const count = document.createElement('p');
     count.className = 'cat-count';
-    count.textContent = `${catRecipes.length} recept`;
+    count.textContent = `${catRecipes.length} ${t(catRecipes.length === 1 ? 'recipe' : 'recipes')}`;
 
     const preview = document.createElement('ul');
     preview.className = 'cat-preview';
@@ -417,7 +417,7 @@ function getCategoryEmoji(cat) {
 function openAddModal() {
   state.editingId = null;
   state.pendingRemoveImage = false;
-  $('#modal-title').textContent = 'Lägg till recept';
+  $('#modal-title').textContent = t('Add Recipe');
   recipeForm.reset();
   $('#form-id').value = '';
   clearDynamicList('ingredients-list');
@@ -435,7 +435,7 @@ function openEditModal(id) {
   if (!recipe) return;
   state.editingId = id;
   state.pendingRemoveImage = false;
-  $('#modal-title').textContent = 'Redigera recept';
+  $('#modal-title').textContent = t('Edit Recipe');
   $('#form-id').value = id;
   $('#form-title').value = recipe.title;
   $('#form-description').value = recipe.description || '';
@@ -479,14 +479,14 @@ function clearDynamicList(listId) {
 
 function addIngredientRow(value) {
   const list = document.getElementById('ingredients-list');
-  const row = buildTextRow(value, 'Ingredient', () => row.remove());
+  const row = buildTextRow(value, t('Ingredient'), () => row.remove());
   list.appendChild(row);
   if (!value) row.querySelector('input').focus();
 }
 
 function addStepRow(value) {
   const list = document.getElementById('steps-list');
-  const row = buildTextRow(value, 'Beskriv steget', () => row.remove());
+  const row = buildTextRow(value, t('Step description'), () => row.remove());
   list.appendChild(row);
   if (!value) row.querySelector('input').focus();
 }
@@ -501,7 +501,7 @@ function addLinkRow(link = {}) {
   ['external', 'recipe'].forEach(t => {
     const opt = document.createElement('option');
     opt.value = t;
-    opt.textContent = t === 'external' ? 'Extern URL' : 'Recept';
+    opt.textContent = t === 'external' ? t('External URL') : t('Recipe');
     typeSelect.appendChild(opt);
   });
   typeSelect.value = link.type || 'external';
@@ -517,7 +517,7 @@ function addLinkRow(link = {}) {
   if (link.type === 'recipe') {
     const linked = state.recipes.find(r => r.id === link.linked_recipe_id);
     urlInput.value = linked ? linked.title : '';
-    urlInput.placeholder = 'Skriv receptnamn…';
+    urlInput.placeholder = t('Type recipe name…');
     urlInput.setAttribute('list', dlId);
     state.recipes.forEach(r => {
       const opt = document.createElement('option');
@@ -532,12 +532,12 @@ function addLinkRow(link = {}) {
   const labelInput = document.createElement('input');
   labelInput.type = 'text';
   labelInput.className = 'link-label';
-  labelInput.placeholder = 'Etikett (valfritt)';
+  labelInput.placeholder = t('Label (optional)');
   labelInput.value = link.label || '';
 
   typeSelect.addEventListener('change', () => {
     if (typeSelect.value === 'recipe') {
-      urlInput.placeholder = 'Skriv receptnamn…';
+      urlInput.placeholder = t('Type recipe name…');
       urlInput.value = '';
       datalist.innerHTML = '';
       state.recipes.forEach(r => {
@@ -558,7 +558,7 @@ function addLinkRow(link = {}) {
   const removeBtn = document.createElement('button');
   removeBtn.type = 'button';
   removeBtn.className = 'btn-icon';
-  removeBtn.title = 'Ta bort';
+  removeBtn.title = t('Remove');
   removeBtn.appendChild(icon('close'));
   removeBtn.addEventListener('click', () => row.remove());
 
@@ -610,7 +610,7 @@ function buildTextRow(value, placeholder, onRemove) {
   const handle = document.createElement('span');
   handle.className = 'drag-handle';
   handle.textContent = '⠿';
-  handle.title = 'Dra för att ändra ordning';
+  handle.title = t('Drag to reorder');
 
   const input = document.createElement('input');
   input.type = 'text';
@@ -620,7 +620,7 @@ function buildTextRow(value, placeholder, onRemove) {
   const removeBtn = document.createElement('button');
   removeBtn.type = 'button';
   removeBtn.className = 'btn-icon';
-  removeBtn.title = 'Ta bort';
+  removeBtn.title = t('Remove');
   removeBtn.appendChild(icon('close'));
   removeBtn.addEventListener('click', onRemove);
 
@@ -670,17 +670,17 @@ async function handleFormSubmit(e) {
   clearFormError();
 
   const title = $('#form-title').value.trim();
-  if (!title) { showFormError('Ange en titel för receptet.'); $('#form-title').focus(); return; }
+  if (!title) { showFormError(t('Please enter a recipe title.')); $('#form-title').focus(); return; }
 
   const categories = $('#form-categories').value
     .split(',').map(c => c.trim().toLowerCase()).filter(Boolean);
-  if (categories.length === 0) { showFormError('Ange minst en kategori.'); $('#form-categories').focus(); return; }
+  if (categories.length === 0) { showFormError(t('Please enter at least one category.')); $('#form-categories').focus(); return; }
 
   const ingredients = collectDynamicValues('ingredients-list');
-  if (ingredients.length === 0) { showFormError('Lägg till minst en ingrediens.'); return; }
+  if (ingredients.length === 0) { showFormError(t('Please add at least one ingredient.')); return; }
 
   const steps = collectDynamicValues('steps-list');
-  if (steps.length === 0) { showFormError('Lägg till minst ett steg.'); return; }
+  if (steps.length === 0) { showFormError(t('Please add at least one step.')); return; }
 
   const links = collectLinks();
 
@@ -719,7 +719,7 @@ async function handleFormSubmit(e) {
       if (updated) showDetail(updated.id);
     }
   } catch (err) {
-    showFormError(err.message || 'Kunde inte spara receptet. Försök igen.');
+    showFormError(err.message || t('Failed to save recipe. Please try again.'));
   }
 }
 
@@ -737,7 +737,7 @@ function openDeleteModal(id) {
   const blockMsg = $('#delete-block-msg');
   const confirmBtn = $('#btn-confirm-delete');
   if (linkedBy.length > 0) {
-    blockMsg.textContent = `Kan inte tas bort: länkas från ${linkedBy.map(r => r.title).join(', ')}`;
+    blockMsg.textContent = `${t('Cannot delete: linked by')} ${linkedBy.map(r => r.title).join(', ')}`;
     blockMsg.classList.remove('hidden');
     confirmBtn.disabled = true;
   } else {
@@ -771,7 +771,7 @@ async function confirmDelete() {
     showView('list');
   } catch (err) {
     const blockMsg = $('#delete-block-msg');
-    blockMsg.textContent = err.message || 'Kunde inte ta bort receptet.';
+    blockMsg.textContent = err.message || t('Failed to delete recipe.');
     blockMsg.classList.remove('hidden');
   }
 }
@@ -780,6 +780,11 @@ async function confirmDelete() {
 
 function capitalize(str) {
   return str.charAt(0).toUpperCase() + str.slice(1);
+}
+
+// Categories are stored in English (e.g. "breakfast"); show the translated name.
+function categoryLabel(cat) {
+  return tCategory(cat) || capitalize(cat);
 }
 
 // ── Mobile sidebar drawer ─────────────────────────────────────────────────────
@@ -902,6 +907,7 @@ async function loadAndRender() {
 // ── Bootstrap ─────────────────────────────────────────────────────────────────
 
 async function init() {
+  translateDOM();
   wireEvents();
   await loadAndRender();
   history.replaceState({ screen: 'categories' }, '');
