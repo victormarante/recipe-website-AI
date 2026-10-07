@@ -64,25 +64,42 @@ header {
 .header-content {
   max-width: 1200px;
   margin: 0 auto;
-  display: grid;
-  grid-template-columns: auto 1fr auto;
+  position: relative;
+  display: flex;
   align-items: center;
   gap: .75rem;
+}
+
+.logo-group {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  display: flex;
+  align-items: center;
+  gap: .4rem;
 }
 
 header h1 {
   font-size: 1.4rem;
   font-weight: 700;
   white-space: nowrap;
-  display: flex;
-  align-items: center;
-  gap: .4rem;
-  justify-self: center;
+  color: #fff;
   cursor: pointer;
 }
 header h1:hover { opacity: .85; }
 
 header h1 .md-icon { width: 1.6rem; height: 1.6rem; }
+
+#font-picker {
+  font-size: .7rem;
+  padding: .15rem .3rem;
+  border-radius: 6px;
+  border: 1px solid rgba(255,255,255,.3);
+  background: rgba(255,255,255,.12);
+  color: var(--clr-sidebar-tx);
+  cursor: pointer;
+}
 
 .menu-toggle {
   display: none;
@@ -733,7 +750,7 @@ footer {
   #btn-add-recipe { display: none; }
   .fab { display: flex; }
 
-  .search-wrapper { flex: 1 1 auto; min-width: 0; max-width: 200px; }
+  .search-wrapper { flex: 1 1 auto; min-width: 0; max-width: 100px; }
   #search-input, #search-input:focus { width: 100%; }
 
   .recipe-grid { grid-template-columns: 1fr; }
@@ -754,5 +771,5 @@ footer {
   .layout { padding: .75rem; }
   #view-categories-home { padding: .75rem; }
   header h1 { font-size: 1.15rem; }
-  .search-wrapper { max-width: 150px; }
+  .search-wrapper { max-width: 75px; }
 }
