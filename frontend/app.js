@@ -804,9 +804,6 @@ function closeSidebar() {
 
 function wireEvents() {
   $('#logo').addEventListener('click', showCategoriesHome);
-  $('#font-picker').addEventListener('change', e => {
-    $('#logo').style.fontFamily = e.target.value;
-  });
 
   $('#btn-add-recipe').addEventListener('click', openAddModal);
   $('#btn-cancel').addEventListener('click', closeModal);

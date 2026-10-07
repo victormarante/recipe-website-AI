@@ -32,7 +32,7 @@ html {
 }
 
 body {
-  font-family: 'Roboto', 'Segoe UI', system-ui, -apple-system, sans-serif;
+  font-family: 'Indie Flower', 'Segoe UI', system-ui, -apple-system, sans-serif;
   background: var(--clr-bg);
   color: var(--clr-text);
   min-height: 100vh;
@@ -81,8 +81,9 @@ header {
 }
 
 header h1 {
+  font-family: 'Luckiest Guy', cursive;
   font-size: 1.4rem;
-  font-weight: 700;
+  font-weight: 400;
   white-space: nowrap;
   color: #fff;
   cursor: pointer;
@@ -90,16 +91,6 @@ header h1 {
 header h1:hover { opacity: .85; }
 
 header h1 .md-icon { width: 1.6rem; height: 1.6rem; }
-
-#font-picker {
-  font-size: .7rem;
-  padding: .15rem .3rem;
-  border-radius: 6px;
-  border: 1px solid rgba(255,255,255,.3);
-  background: rgba(255,255,255,.12);
-  color: var(--clr-sidebar-tx);
-  cursor: pointer;
-}
 
 .menu-toggle {
   display: none;
