@@ -9,6 +9,7 @@ primary_region = 'arn'
 [build]
 
 [env]
+  APP_ENV = "production"
   DATABASE_PATH = "/data/recipes.db"
 
 [[mounts]]

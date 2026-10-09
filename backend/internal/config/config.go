@@ -19,6 +19,8 @@ type Config struct {
 	R2SecretKey  string
 	R2BucketName string
 	R2PublicURL  string
+	AdminPIN     string
+	AuthSecret   string
 }
 
 // Load reads configuration from environment variables
@@ -36,6 +38,12 @@ func Load() (*Config, error) {
 		R2SecretKey:  getEnv("R2_SECRET_ACCESS_KEY", ""),
 		R2BucketName: getEnv("R2_BUCKET_NAME", ""),
 		R2PublicURL:  getEnv("R2_PUBLIC_URL", ""),
+		AdminPIN:     os.Getenv("ADMIN_PIN"),
+		AuthSecret:   os.Getenv("AUTH_SECRET"),
+	}
+
+	if err := cfg.loadAuth(); err != nil {
+		return nil, err
 	}
 
 	r2Values := map[string]string{
@@ -73,4 +81,37 @@ func getEnv(key, defaultValue string) string {
 		return value
 	}
 	return defaultValue
+}
+
+const (
+	minPINLength = 6
+
+	// Development-only fallbacks so a local setup works without extra env vars.
+	devAdminPIN   = "123456"
+	devAuthSecret = "dev-only-insecure-secret"
+)
+
+// loadAuth validates the admin PIN and token secret. Both are required in
+// production; development falls back to insecure defaults.
+func (c *Config) loadAuth() error {
+	if c.Environment != "production" {
+		if c.AdminPIN == "" {
+			c.AdminPIN = devAdminPIN
+		}
+		if c.AuthSecret == "" {
+			c.AuthSecret = devAuthSecret
+		}
+	}
+	if c.AdminPIN == "" || c.AuthSecret == "" {
+		return fmt.Errorf("ADMIN_PIN and AUTH_SECRET are required when APP_ENV=production")
+	}
+	if len(c.AdminPIN) < minPINLength {
+		return fmt.Errorf("ADMIN_PIN must be at least %d digits", minPINLength)
+	}
+	for _, r := range c.AdminPIN {
+		if r < '0' || r > '9' {
+			return fmt.Errorf("ADMIN_PIN must contain digits only")
+		}
+	}
+	return nil
 }

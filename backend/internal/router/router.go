@@ -51,16 +51,24 @@ func New(
 	})
 
 	// API v1 routes
-	r.Route("/api/v1", func(r chi.Router) {
-		r.Get("/recipes", recipeHandler.GetRecipes)
-		r.Post("/recipes", recipeHandler.CreateRecipe)
-		r.Get("/recipes/{id}", recipeHandler.GetRecipe)
-		r.Put("/recipes/{id}", recipeHandler.UpdateRecipe)
-		r.Delete("/recipes/{id}", recipeHandler.DeleteRecipe)
-		r.Post("/recipes/{id}/image", recipeHandler.UploadRecipeImage)
-		r.Delete("/recipes/{id}/image", recipeHandler.DeleteRecipeImage)
+	authHandler := handlers.NewAuthHandler(cfg)
 
+	r.Route("/api/v1", func(r chi.Router) {
+		// Public: read-only access and login
+		r.Post("/auth/login", authHandler.Login)
+		r.Get("/recipes", recipeHandler.GetRecipes)
+		r.Get("/recipes/{id}", recipeHandler.GetRecipe)
 		r.Get("/categories", categoryHandler.GetCategories)
+
+		// Admin only: anything that modifies data
+		r.Group(func(r chi.Router) {
+			r.Use(customMiddleware.RequireAdmin(cfg.AuthSecret))
+			r.Post("/recipes", recipeHandler.CreateRecipe)
+			r.Put("/recipes/{id}", recipeHandler.UpdateRecipe)
+			r.Delete("/recipes/{id}", recipeHandler.DeleteRecipe)
+			r.Post("/recipes/{id}/image", recipeHandler.UploadRecipeImage)
+			r.Delete("/recipes/{id}/image", recipeHandler.DeleteRecipeImage)
+		})
 	})
 
 	return r

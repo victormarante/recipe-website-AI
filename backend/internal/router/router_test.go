@@ -16,6 +16,26 @@ import (
 	"recipe-backend/internal/router"
 )
 
+const testPIN = "654321"
+
+// login returns an admin Bearer header value obtained via the login endpoint.
+func login(t *testing.T, h http.Handler) string {
+	t.Helper()
+	rr := httptest.NewRecorder()
+	req := httptest.NewRequest(http.MethodPost, "/api/v1/auth/login", strings.NewReader(`{"pin":"`+testPIN+`"}`))
+	h.ServeHTTP(rr, req)
+	if rr.Code != http.StatusOK {
+		t.Fatalf("login expected 200, got %d body %s", rr.Code, rr.Body.String())
+	}
+	var resp struct {
+		Token string `json:"token"`
+	}
+	if err := json.NewDecoder(rr.Body).Decode(&resp); err != nil || resp.Token == "" {
+		t.Fatalf("decode login: %v token %q", err, resp.Token)
+	}
+	return "Bearer " + resp.Token
+}
+
 func setupRouter(t *testing.T) http.Handler {
 	t.Helper()
 
@@ -34,6 +54,8 @@ func setupRouter(t *testing.T) http.Handler {
 		Environment:  "test",
 		DatabasePath: ":memory:",
 		CORSOrigins:  []string{"*"},
+		AdminPIN:     testPIN,
+		AuthSecret:   "router-test-secret",
 	}
 
 	return router.New(
@@ -46,6 +68,7 @@ func setupRouter(t *testing.T) http.Handler {
 
 func TestRecipeListingInvalidJSONValidationAndMissingRecipe(t *testing.T) {
 	h := setupRouter(t)
+	auth := login(t, h)
 
 	rr := httptest.NewRecorder()
 	h.ServeHTTP(rr, httptest.NewRequest(http.MethodGet, "/api/v1/recipes", nil))
@@ -56,6 +79,7 @@ func TestRecipeListingInvalidJSONValidationAndMissingRecipe(t *testing.T) {
 	rr = httptest.NewRecorder()
 	req := httptest.NewRequest(http.MethodPost, "/api/v1/recipes", strings.NewReader(`{`))
 	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Authorization", auth)
 	h.ServeHTTP(rr, req)
 	if rr.Code != http.StatusBadRequest {
 		t.Fatalf("invalid json expected 400, got %d", rr.Code)
@@ -65,6 +89,7 @@ func TestRecipeListingInvalidJSONValidationAndMissingRecipe(t *testing.T) {
 	rr = httptest.NewRecorder()
 	req = httptest.NewRequest(http.MethodPost, "/api/v1/recipes", strings.NewReader(`{"title":""}`))
 	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Authorization", auth)
 	h.ServeHTTP(rr, req)
 	if rr.Code != http.StatusBadRequest {
 		t.Fatalf("validation expected 400, got %d", rr.Code)
@@ -81,6 +106,7 @@ func TestRecipeListingInvalidJSONValidationAndMissingRecipe(t *testing.T) {
 
 func TestCategoryJSONEscapingAndReadiness(t *testing.T) {
 	h := setupRouter(t)
+	auth := login(t, h)
 
 	payload := []byte(`{
 		"title":"Quoted",
@@ -93,6 +119,7 @@ func TestCategoryJSONEscapingAndReadiness(t *testing.T) {
 	rr := httptest.NewRecorder()
 	req := httptest.NewRequest(http.MethodPost, "/api/v1/recipes", bytes.NewReader(payload))
 	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Authorization", auth)
 	h.ServeHTTP(rr, req)
 	if rr.Code != http.StatusCreated {
 		t.Fatalf("create expected 201, got %d body %s", rr.Code, rr.Body.String())
@@ -120,9 +147,12 @@ func TestCategoryJSONEscapingAndReadiness(t *testing.T) {
 
 func TestImageEndpointUnavailableWithoutStorage(t *testing.T) {
 	h := setupRouter(t)
+	auth := login(t, h)
 
 	rr := httptest.NewRecorder()
-	h.ServeHTTP(rr, httptest.NewRequest(http.MethodPost, "/api/v1/recipes/1/image", strings.NewReader("")))
+	req := httptest.NewRequest(http.MethodPost, "/api/v1/recipes/1/image", strings.NewReader(""))
+	req.Header.Set("Authorization", auth)
+	h.ServeHTTP(rr, req)
 	if rr.Code != http.StatusServiceUnavailable {
 		t.Fatalf("expected 503, got %d", rr.Code)
 	}
@@ -146,5 +176,51 @@ func assertJSONError(t *testing.T, rr *httptest.ResponseRecorder, expected strin
 	}
 	if response.Message != "" {
 		t.Fatalf("internal message should not be exposed: %#v", response)
+	}
+}
+
+func TestWriteRoutesRequireAdminToken(t *testing.T) {
+	h := setupRouter(t)
+
+	writes := []struct{ method, path string }{
+		{http.MethodPost, "/api/v1/recipes"},
+		{http.MethodPut, "/api/v1/recipes/1"},
+		{http.MethodDelete, "/api/v1/recipes/1"},
+		{http.MethodPost, "/api/v1/recipes/1/image"},
+		{http.MethodDelete, "/api/v1/recipes/1/image"},
+	}
+	for _, w := range writes {
+		rr := httptest.NewRecorder()
+		h.ServeHTTP(rr, httptest.NewRequest(w.method, w.path, strings.NewReader("{}")))
+		if rr.Code != http.StatusUnauthorized {
+			t.Fatalf("%s %s expected 401, got %d", w.method, w.path, rr.Code)
+		}
+	}
+
+	for _, path := range []string{"/api/v1/recipes", "/api/v1/categories"} {
+		rr := httptest.NewRecorder()
+		h.ServeHTTP(rr, httptest.NewRequest(http.MethodGet, path, nil))
+		if rr.Code != http.StatusOK {
+			t.Fatalf("GET %s expected 200 without token, got %d", path, rr.Code)
+		}
+	}
+}
+
+func TestLoginRejectsWrongPINAndRateLimits(t *testing.T) {
+	h := setupRouter(t)
+
+	for i := 0; i < 5; i++ {
+		rr := httptest.NewRecorder()
+		h.ServeHTTP(rr, httptest.NewRequest(http.MethodPost, "/api/v1/auth/login", strings.NewReader(`{"pin":"000000"}`)))
+		if rr.Code != http.StatusUnauthorized {
+			t.Fatalf("attempt %d expected 401, got %d", i, rr.Code)
+		}
+	}
+
+	// Locked out, even for the correct PIN.
+	rr := httptest.NewRecorder()
+	h.ServeHTTP(rr, httptest.NewRequest(http.MethodPost, "/api/v1/auth/login", strings.NewReader(`{"pin":"`+testPIN+`"}`)))
+	if rr.Code != http.StatusTooManyRequests {
+		t.Fatalf("expected 429, got %d", rr.Code)
 	}
 }
