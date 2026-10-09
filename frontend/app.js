@@ -1180,6 +1180,16 @@ async function renderFontPicker() {
     input.placeholder = t('Default');
     input.value = prefs[role] || '';
     input.autocomplete = 'off';
+    // A datalist only suggests names matching the current text, so empty the
+    // field on focus to show the whole list; restore it if nothing was typed.
+    input.addEventListener('focus', () => {
+      input.dataset.prev = input.value;
+      input.placeholder = input.value || t('Default');
+      input.value = '';
+    });
+    input.addEventListener('blur', () => {
+      if (!input.value) input.value = input.dataset.prev || '';
+    });
     input.addEventListener('change', async () => {
       const family = input.value.trim();
       error.textContent = '';
