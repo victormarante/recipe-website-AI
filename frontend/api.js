@@ -71,17 +71,22 @@ async function request(endpoint, options = {}) {
       return null;
     }
 
-    const data = await response.json();
+    // Non-JSON bodies (proxy errors, old deploys, plain-text 404s) must not leak parser errors.
+    const data = await response.json().catch(() => null);
 
     if (!response.ok) {
       if (response.status === 401 && endpoint !== '/auth/login') handleUnauthorized();
-      throw new APIError(data.error || t('Request failed'), response.status, data);
+      throw new APIError((data && data.error) || t('Request failed'), response.status, data);
+    }
+
+    if (data === null) {
+      throw new APIError(t('Unexpected server response'), response.status, null);
     }
 
     return data;
   } catch (error) {
     if (error instanceof APIError) throw error;
-    throw new APIError(`${t('Network error')}: ${error.message}`, 0, null);
+    throw new APIError(t('Network error'), 0, null);
   }
 }
 

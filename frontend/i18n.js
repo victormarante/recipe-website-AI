@@ -78,6 +78,7 @@ const TRANSLATIONS = {
       'Failed to delete recipe.': 'Kunde inte ta bort receptet.',
       'Request failed': 'Förfrågan misslyckades',
       'Network error': 'Nätverksfel',
+      'Unexpected server response': 'Oväntat svar från servern',
       'Upload failed': 'Uppladdningen misslyckades',
     },
     // Keyed by the stored (lowercase English) category name.
