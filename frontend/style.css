@@ -2,9 +2,9 @@
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
 :root {
-  --font-body:    'Indie Flower', 'Segoe UI', system-ui, -apple-system, sans-serif;
+  --font-body:    'Fredoka', 'Segoe UI', system-ui, -apple-system, sans-serif;
   --font-logo:    'Luckiest Guy', cursive;
-  --font-heading: inherit;
+  --font-heading: 'Indie Flower', cursive;
   --font-ui:      inherit;
   --clr-primary:    #7c3aed;
   --clr-primary-dk: #6d28d9;
@@ -200,6 +200,7 @@ header h1 .md-icon { width: 1.6rem; height: 1.6rem; }
 .btn-icon:hover { background: rgba(124,58,237,.1); }
 .btn-icon .md-icon { width: 1.2rem; height: 1.2rem; fill: var(--clr-muted); }
 .btn-back {
+  font-family: var(--font-heading);
   background: transparent;
   color: var(--clr-primary);
   border: none;
@@ -285,6 +286,7 @@ header h1 .md-icon { width: 1.6rem; height: 1.6rem; }
 .cat-emoji { font-size: 2.2rem; line-height: 1; }
 .category-home-card h3 { font-family: var(--font-heading); font-size: 1.15rem; font-weight: 700; }
 .cat-count {
+  font-family: var(--font-heading);
   font-size: .8rem;
   color: var(--clr-primary);
   font-weight: 600;
@@ -342,12 +344,6 @@ header h1 .md-icon { width: 1.6rem; height: 1.6rem; }
 
 #category-list { list-style: none; }
 
-/* ── Font picker (temporary, for trying out fonts) ── */
-.font-picker { margin-top: 1.25rem; padding-top: 1rem; border-top: 1px solid var(--clr-primary-lt); }
-.font-picker label { display: block; font-size: .8rem; color: var(--clr-muted); margin-top: .5rem; }
-.font-picker input { width: 100%; padding: .35rem .5rem; border: 1px solid var(--clr-primary-lt); border-radius: var(--radius); font-size: 1rem; }
-.font-picker .font-error { color: var(--clr-danger); font-size: .8rem; min-height: 1em; }
-.font-picker button { margin-top: .75rem; }
 
 #category-list li { margin-bottom: .25rem; }
 
@@ -450,6 +446,7 @@ header h1 .md-icon { width: 1.6rem; height: 1.6rem; }
 }
 
 .tag {
+  font-family: var(--font-heading);
   background: var(--clr-primary-lt);
   color: var(--clr-primary-dk);
   font-size: .72rem;
@@ -504,6 +501,7 @@ header h1 .md-icon { width: 1.6rem; height: 1.6rem; }
 
 #recipe-detail section { margin-bottom: 1.5rem; }
 #recipe-detail section h3 {
+  font-family: var(--font-heading);
   font-size: .85rem;
   font-weight: 700;
   margin-bottom: .6rem;
@@ -518,6 +516,7 @@ header h1 .md-icon { width: 1.6rem; height: 1.6rem; }
 #recipe-detail li { margin-bottom: .4rem; line-height: 1.6; }
 
 .detail-links a {
+  font-family: var(--font-heading);
   display: inline-flex;
   align-items: center;
   gap: .35rem;
@@ -809,7 +808,6 @@ footer {
     border-radius: 0;
     z-index: 160;
     padding-top: 5rem; /* clears the sticky header (~56px) */
-    overflow-y: auto;
     transform: translateX(-100%);
     transition: transform var(--transition);
     box-shadow: none;
