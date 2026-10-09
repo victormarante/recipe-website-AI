@@ -21,6 +21,13 @@ Required Fly secrets:
 flyctl secrets set CORS_ORIGIN="https://<owner>.github.io"
 ```
 
+Required admin access secrets (the backend refuses to start in production without them; `ADMIN_PIN` must be at least 6 digits):
+
+```bash
+flyctl secrets set ADMIN_PIN="123456"
+flyctl secrets set AUTH_SECRET="$(openssl rand -hex 32)"
+```
+
 Optional image storage secrets:
 
 ```bash

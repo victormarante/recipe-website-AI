@@ -4,7 +4,7 @@ Marellis is a family recipe website for storing, browsing, and editing recipes. 
 
 ## Current Features
 
-- Public recipe and category API (no authentication)
+- Public read-only recipe and category API; writes require an admin PIN login
 - Recipe create, read, update, and delete
 - Category browsing and filtering
 - Text search using SQL `LIKE` over recipe fields
@@ -77,6 +77,13 @@ Common backend variables:
 - `DATABASE_PATH` defaults to `./recipes.db`
 - `CORS_ORIGIN` defaults to `http://localhost:8080` if unset
 
+Admin access variables:
+
+- `ADMIN_PIN` - numeric, at least 6 digits. Required when `APP_ENV=production`; in development it defaults to `123456`.
+- `AUTH_SECRET` - random string used to sign tokens (e.g. `openssl rand -hex 32`). Required when `APP_ENV=production`.
+
+Tokens are valid for 90 days and are stored in the browser's `localStorage`; changing `AUTH_SECRET` invalidates all of them.
+
 Optional R2 image storage variables:
 
 - `R2_ACCOUNT_ID`
@@ -111,18 +118,19 @@ There is no frontend build step or package manager. Manual browser validation is
 
 ## API Summary
 
-All endpoints are public (no authentication):
+Read endpoints are public. Write endpoints require an admin token (`Authorization: Bearer <token>`), obtained by posting the admin PIN:
 
 - `GET /health`
 - `GET /ready`
+- `POST /api/v1/auth/login` (public; body `{"pin":"123456"}`, returns `{"token","expires_at"}`; 401 on a wrong PIN, 429 after 5 failures per 15 minutes per IP)
 - `GET /api/v1/recipes`
-- `POST /api/v1/recipes`
 - `GET /api/v1/recipes/{id}`
-- `PUT /api/v1/recipes/{id}`
-- `DELETE /api/v1/recipes/{id}`
-- `POST /api/v1/recipes/{id}/image`
-- `DELETE /api/v1/recipes/{id}/image`
 - `GET /api/v1/categories`
+- `POST /api/v1/recipes` (admin)
+- `PUT /api/v1/recipes/{id}` (admin)
+- `DELETE /api/v1/recipes/{id}` (admin)
+- `POST /api/v1/recipes/{id}/image` (admin)
+- `DELETE /api/v1/recipes/{id}/image` (admin)
 
 See [backend/README.md](backend/README.md) for request examples.
 
@@ -136,7 +144,7 @@ See [DEPLOYMENT.md](DEPLOYMENT.md) for details.
 
 ## Current Limitations
 
-- The API has no authentication; all endpoints are public. This is an intentional phase-1 change, with further access-control decisions tracked separately.
+- Auth is a single shared admin PIN with a signed token stored in browser `localStorage`; there are no individual accounts. Login attempts are rate limited in memory per IP (resets on restart).
 - Search is SQL `LIKE` search, not SQLite FTS.
 - Database backup/restore is documented at a basic operational level, but should be rehearsed before relying on it for production recovery.
 

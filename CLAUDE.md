@@ -35,7 +35,7 @@ These instructions are for Claude-specific behavior in this repository. Generic 
 
 ## Project Constraints
 
-- Backend API has no authentication (removed deliberately) — don't reintroduce auth unless explicitly asked.
+- Auth is a single admin PIN (`ADMIN_PIN`, 6+ digits) exchanged at `POST /api/v1/auth/login` for a signed Bearer token. Reads are public; all writes go through `RequireAdmin`. Keep it that way: no user accounts or other auth schemes unless explicitly asked.
 - `/api/v1` is a stable contract — don't change existing endpoint request/response shapes without explicit instruction.
 - Never edit applied migration files in `backend/migrations/`; add new numbered migrations instead.
 - Backend deploys via the root `Dockerfile` + `fly.toml` — there is no separate backend-only Dockerfile.

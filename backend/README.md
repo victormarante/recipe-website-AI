@@ -6,7 +6,7 @@ Go REST API for the Marellis Recipe Website.
 
 - Load environment configuration
 - Open and migrate the SQLite database
-- Serve public recipe, category, and image endpoints (no authentication)
+- Serve public read endpoints; recipe and image writes require an admin token from PIN login
 - Store recipe arrays as JSON text in SQLite
 - Optionally upload/delete recipe images in Cloudflare R2-compatible storage
 
@@ -35,6 +35,13 @@ Common:
 - `APP_ENV` defaults to `development`
 - `DATABASE_PATH` defaults to `./recipes.db`
 - `CORS_ORIGIN` defaults to `http://localhost:8080`
+
+Admin access variables:
+
+- `ADMIN_PIN` - numeric, at least 6 digits. Required when `APP_ENV=production`; in development it defaults to `123456`.
+- `AUTH_SECRET` - random string used to sign tokens (e.g. `openssl rand -hex 32`). Required when `APP_ENV=production`.
+
+Tokens are valid for 90 days and are stored in the browser's `localStorage`; changing `AUTH_SECRET` invalidates all of them.
 
 Optional R2 image storage:
 
@@ -75,18 +82,19 @@ The test suite covers repository behavior, migrations, handlers, and router beha
 
 Base path: `/api/v1`
 
-All endpoints are public (no authentication):
+Read endpoints are public. Write endpoints require an admin token (`Authorization: Bearer <token>`), obtained by posting the admin PIN:
 
 - `GET /health`
 - `GET /ready`
+- `POST /api/v1/auth/login` (public; body `{"pin":"123456"}`, returns `{"token","expires_at"}`; 401 on a wrong PIN, 429 after 5 failures per 15 minutes per IP)
 - `GET /api/v1/recipes`
-- `POST /api/v1/recipes`
 - `GET /api/v1/recipes/{id}`
-- `PUT /api/v1/recipes/{id}`
-- `DELETE /api/v1/recipes/{id}`
-- `POST /api/v1/recipes/{id}/image`
-- `DELETE /api/v1/recipes/{id}/image`
 - `GET /api/v1/categories`
+- `POST /api/v1/recipes` (admin)
+- `PUT /api/v1/recipes/{id}` (admin)
+- `DELETE /api/v1/recipes/{id}` (admin)
+- `POST /api/v1/recipes/{id}/image` (admin)
+- `DELETE /api/v1/recipes/{id}/image` (admin)
 
 ### List Recipes
 

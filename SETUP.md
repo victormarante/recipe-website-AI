@@ -74,6 +74,17 @@ curl -X POST http://localhost:8080/api/v1/recipes \
   }'
 ```
 
+## Admin Access
+
+Writes (add/edit/delete recipes and images) require logging in with a PIN. Set in `backend/.env`:
+
+```env
+ADMIN_PIN=123456
+AUTH_SECRET=
+```
+
+`ADMIN_PIN` must be at least 6 digits. In development both fall back to defaults (PIN `123456`), so you can leave them empty locally. In production (`APP_ENV=production`) both are required.
+
 ## Optional Image Storage
 
 Image upload and delete endpoints require Cloudflare R2-compatible settings. Without them, the backend still runs, but image endpoints return `503`.

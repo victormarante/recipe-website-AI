@@ -57,7 +57,7 @@ There is no frontend build step. For frontend changes:
 
 - Treat `/api/v1` paths and JSON response fields as a contract.
 - Update backend docs and frontend API calls together when endpoint behavior changes.
-- The API has no authentication; all `/api/v1` endpoints are public.
+- `/api/v1` read endpoints are public. Write endpoints require an admin Bearer token from `POST /api/v1/auth/login` (PIN from `ADMIN_PIN`, signed with `AUTH_SECRET`).
 
 ## Security Constraints
 
