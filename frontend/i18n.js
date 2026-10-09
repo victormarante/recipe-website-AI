@@ -8,6 +8,12 @@ const LANG = 'sv';
 const TRANSLATIONS = {
   sv: {
     ui: {
+      'Admin login': 'Admin-inloggning',
+      'Log in': 'Logga in',
+      'Log out': 'Logga ut',
+      'PIN code': 'PIN-kod',
+      'Invalid PIN': 'Fel PIN-kod',
+      'Login failed': 'Inloggningen misslyckades',
       'Toggle menu': 'Växla meny',
       'Menu': 'Meny',
       'Add Recipe': 'Lägg till recept',
@@ -50,6 +56,7 @@ const TRANSLATIONS = {
       'Remove photo': 'Ta bort foto',
       'Save Recipe': 'Spara recept',
       'Cancel': 'Avbryt',
+      'View full image': 'Visa hela bilden',
       'Delete': 'Ta bort',
       'Are you sure you want to delete': 'Är du säker på att du vill ta bort',
       '? This cannot be undone.': '? Det går inte att ångra.',

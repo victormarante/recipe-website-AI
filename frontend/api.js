@@ -24,6 +24,32 @@ class APIError extends Error {
   }
 }
 
+// ── Auth token ─────────────────────────────────────────────────────────────────
+
+const TOKEN_KEY = 'recipe_admin_token';
+
+function getToken() {
+  try { return localStorage.getItem(TOKEN_KEY); } catch { return null; }
+}
+
+function setToken(token) {
+  try {
+    if (token) localStorage.setItem(TOKEN_KEY, token);
+    else localStorage.removeItem(TOKEN_KEY);
+  } catch { /* storage unavailable; token only lives for this page */ }
+  window.dispatchEvent(new Event('auth-changed'));
+}
+
+function authHeaders() {
+  const token = getToken();
+  return token ? { Authorization: `Bearer ${token}` } : {};
+}
+
+// A 401 on a request that sent a token means it expired or is invalid.
+function handleUnauthorized() {
+  if (getToken()) setToken(null);
+}
+
 // ── HTTP request helper ────────────────────────────────────────────────────────
 
 async function request(endpoint, options = {}) {
@@ -32,6 +58,7 @@ async function request(endpoint, options = {}) {
   const config = {
     headers: {
       'Content-Type': 'application/json',
+      ...authHeaders(),
       ...options.headers,
     },
     ...options,
@@ -47,6 +74,7 @@ async function request(endpoint, options = {}) {
     const data = await response.json();
 
     if (!response.ok) {
+      if (response.status === 401 && endpoint !== '/auth/login') handleUnauthorized();
       throw new APIError(data.error || t('Request failed'), response.status, data);
     }
 
@@ -96,9 +124,11 @@ const RecipeAPI = {
     form.append('image', file);
     const response = await fetch(url, {
       method: 'POST',
+      headers: authHeaders(),
       body: form,
     });
     if (!response.ok) {
+      if (response.status === 401) handleUnauthorized();
       const data = await response.json().catch(() => ({}));
       throw new APIError(data.error || t('Upload failed'), response.status, data);
     }
@@ -115,6 +145,27 @@ const RecipeAPI = {
 const CategoryAPI = {
   async getAll() {
     return request('/categories');
+  },
+};
+
+// ── Auth API ───────────────────────────────────────────────────────────────────
+
+const AuthAPI = {
+  async login(pin) {
+    const data = await request('/auth/login', {
+      method: 'POST',
+      body: JSON.stringify({ pin }),
+    });
+    setToken(data.token);
+    return data;
+  },
+
+  logout() {
+    setToken(null);
+  },
+
+  isLoggedIn() {
+    return Boolean(getToken());
   },
 };
 
@@ -136,6 +187,7 @@ const HealthAPI = {
 window.API = {
   recipes: RecipeAPI,
   categories: CategoryAPI,
+  auth: AuthAPI,
   health: HealthAPI,
   baseURL: API_BASE_URL,
 };

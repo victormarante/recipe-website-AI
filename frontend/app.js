@@ -11,8 +11,6 @@ let state = {
   pendingRemoveImage: false,
 };
 
-let isPopping = false;
-
 // ── DOM refs ─────────────────────────────────────────────────────────────────
 
 const $ = (sel, ctx = document) => ctx.querySelector(sel);
@@ -28,6 +26,8 @@ const recipeDetail  = $('#recipe-detail');
 const searchInput   = $('#search-input');
 const modalOverlay  = $('#modal-overlay');
 const deleteOverlay = $('#delete-overlay');
+const lightboxOverlay = $('#lightbox-overlay');
+const lightboxImg   = $('#lightbox-img');
 const recipeForm    = $('#recipe-form');
 
 // ── Icon helper ───────────────────────────────────────────────────────────────
@@ -140,7 +140,7 @@ function buildCard(recipe) {
   });
 
   const actions = document.createElement('div');
-  actions.className = 'card-actions';
+  actions.className = 'card-actions admin-only';
 
   const editBtn = document.createElement('button');
   editBtn.className = 'btn-icon';
@@ -176,8 +176,12 @@ function buildCard(recipe) {
 }
 
 function showDetail(id) {
+  go(`#/recipes/${id}`);
+}
+
+function renderDetail(id) {
   const recipe = state.recipes.find(r => r.id === id);
-  if (!recipe) return;
+  if (!recipe) return false;
 
   recipeDetail.innerHTML = '';
 
@@ -194,7 +198,7 @@ function showDetail(id) {
   });
 
   const detailActions = document.createElement('div');
-  detailActions.className = 'detail-actions';
+  detailActions.className = 'detail-actions admin-only';
   const editBtn = document.createElement('button');
   editBtn.className = 'btn-icon';
   editBtn.title = t('Edit recipe');
@@ -246,11 +250,23 @@ function showDetail(id) {
   recipeDetail.appendChild(titleRow);
   recipeDetail.appendChild(meta);
   if (recipe.image_url) {
+    const frame = document.createElement('button');
+    frame.type = 'button';
+    frame.className = 'recipe-photo-frame';
+    frame.setAttribute('aria-label', t('View full image'));
+    const bg = document.createElement('img');
+    bg.src = recipe.image_url;
+    bg.alt = '';
+    bg.setAttribute('aria-hidden', 'true');
+    bg.className = 'recipe-photo-bg';
     const img = document.createElement('img');
     img.src = recipe.image_url;
     img.alt = recipe.title;
     img.className = 'recipe-photo';
-    recipeDetail.appendChild(img);
+    frame.appendChild(bg);
+    frame.appendChild(img);
+    frame.addEventListener('click', () => openLightbox(recipe.image_url, recipe.title));
+    recipeDetail.appendChild(frame);
   }
   recipeDetail.appendChild(descSection);
   recipeDetail.appendChild(ingSection);
@@ -302,7 +318,7 @@ function showDetail(id) {
   }
 
   showView('detail');
-  if (!isPopping) history.pushState({ screen: 'detail', id: recipe.id, category: state.activeCategory }, '');
+  return true;
 }
 
 // ── View switching ────────────────────────────────────────────────────────────
@@ -335,6 +351,10 @@ function showView(name) {
 }
 
 function selectCategory(cat) {
+  go(cat ? `#/categories/${encodeURIComponent(cat)}` : '#/recipes');
+}
+
+function renderList(cat) {
   state.activeCategory = cat;
   state.searchQuery = '';
   searchInput.value = '';
@@ -342,16 +362,18 @@ function selectCategory(cat) {
   renderRecipeList();
   showView('list');
   closeSidebar();
-  if (!isPopping) history.pushState({ screen: 'list', category: cat }, '');
 }
 
 function showCategoriesHome() {
+  go('#/');
+}
+
+function renderHome() {
   state.activeCategory = null;
   state.searchQuery = '';
   searchInput.value = '';
   renderCategoryCards();
   showView('categories');
-  if (!isPopping) history.pushState({ screen: 'categories' }, '');
 }
 
 function renderCategoryCards() {
@@ -466,6 +488,17 @@ function openEditModal(id) {
 
   modalOverlay.classList.remove('hidden');
   $('#form-title').focus();
+}
+
+function openLightbox(src, alt) {
+  lightboxImg.src = src;
+  lightboxImg.alt = alt;
+  lightboxOverlay.classList.remove('hidden');
+}
+
+function closeLightbox() {
+  lightboxOverlay.classList.add('hidden');
+  lightboxImg.removeAttribute('src');
 }
 
 function closeModal() {
@@ -768,7 +801,6 @@ async function confirmDelete() {
     await window.API.recipes.delete(state.pendingDeleteId);
     closeDeleteModal();
     await loadAndRender();
-    showView('list');
   } catch (err) {
     const blockMsg = $('#delete-block-msg');
     blockMsg.textContent = err.message || t('Failed to delete recipe.');
@@ -799,6 +831,40 @@ function toggleSidebar() {
 function closeSidebar() {
   $('#sidebar').classList.remove('open');
   $('#drawer-overlay').classList.add('hidden');
+}
+
+// ── Admin login ───────────────────────────────────────────────────────────────
+
+const loginOverlay = $('#login-overlay');
+
+function applyAuthState() {
+  const admin = window.API.auth.isLoggedIn();
+  document.body.classList.toggle('is-admin', admin);
+  $('#btn-auth').textContent = t(admin ? 'Log out' : 'Admin login');
+}
+
+function openLoginModal() {
+  $('#login-form').reset();
+  $('#login-error').classList.add('hidden');
+  loginOverlay.classList.remove('hidden');
+  $('#login-pin').focus();
+}
+
+function closeLoginModal() {
+  loginOverlay.classList.add('hidden');
+}
+
+async function handleLogin(e) {
+  e.preventDefault();
+  const errorEl = $('#login-error');
+  errorEl.classList.add('hidden');
+  try {
+    await window.API.auth.login($('#login-pin').value.trim());
+    closeLoginModal();
+  } catch (err) {
+    errorEl.textContent = err.status === 401 ? t('Invalid PIN') : (err.message || t('Login failed'));
+    errorEl.classList.remove('hidden');
+  }
 }
 
 // ── Event wiring ──────────────────────────────────────────────────────────────
@@ -844,11 +910,21 @@ function wireEvents() {
 
   $('#fab-add').addEventListener('click', openAddModal);
 
+  $('#btn-auth').addEventListener('click', () => {
+    if (window.API.auth.isLoggedIn()) window.API.auth.logout();
+    else openLoginModal();
+  });
+  $('#login-form').addEventListener('submit', handleLogin);
+  $('#btn-cancel-login').addEventListener('click', closeLoginModal);
+  loginOverlay.addEventListener('click', e => { if (e.target === loginOverlay) closeLoginModal(); });
+  window.addEventListener('auth-changed', applyAuthState);
+
   modalOverlay.addEventListener('click', e => { if (e.target === modalOverlay) closeModal(); });
   deleteOverlay.addEventListener('click', e => { if (e.target === deleteOverlay) closeDeleteModal(); });
+  lightboxOverlay.addEventListener('click', closeLightbox);
 
   document.addEventListener('keydown', e => {
-    if (e.key === 'Escape') { closeModal(); closeDeleteModal(); closeSidebar(); }
+    if (e.key === 'Escape') { closeModal(); closeDeleteModal(); closeLoginModal(); closeLightbox(); closeSidebar(); }
   });
 
   searchInput.addEventListener('input', () => {
@@ -864,31 +940,38 @@ function wireEvents() {
   });
 }
 
-// ── Navigation (History) ──────────────────────────────────────────────────────
+// ── Navigation (hash routes) ──────────────────────────────────────────────────
+//   #/                      categories home
+//   #/recipes               all recipes
+//   #/categories/<name>     recipes in a category
+//   #/recipes/<id>          recipe detail
 
-window.addEventListener('popstate', e => {
-  isPopping = true;
+function go(hash) {
+  if (location.hash === hash) route();
+  else location.hash = hash;
+}
+
+function route() {
   closeSidebar();
   state.searchQuery = '';
   searchInput.value = '';
 
-  const target = e.state || { screen: 'categories' };
-  if (target.screen === 'detail') {
-    const recipe = state.recipes.find(r => r.id === target.id);
-    if (recipe) {
-      state.activeCategory = target.category ?? null;
-      showDetail(recipe.id);
-    } else {
-      showCategoriesHome();
-    }
-  } else if (target.screen === 'list') {
-    selectCategory(target.category ?? null);
-  } else {
-    showCategoriesHome();
-  }
+  const parts = location.hash.replace(/^#\/?/, '').split('/').filter(Boolean);
 
-  isPopping = false;
-});
+  if (parts[0] === 'recipes' && parts.length === 1) {
+    renderList(null);
+  } else if (parts[0] === 'recipes') {
+    if (!renderDetail(parseInt(parts[1], 10))) go('#/recipes');
+  } else if (parts[0] === 'categories' && parts[1]) {
+    let cat = parts[1];
+    try { cat = decodeURIComponent(cat); } catch { /* keep raw */ }
+    renderList(cat.toLowerCase().trim());
+  } else {
+    renderHome();
+  }
+}
+
+window.addEventListener('hashchange', route);
 
 // ── Data loading ──────────────────────────────────────────────────────────────
 
@@ -901,7 +984,7 @@ async function loadAndRender() {
   renderCategories();
   renderCategoryCards();
   renderRecipeList();
-  showView('categories');
+  route();
 }
 
 // ── Bootstrap ─────────────────────────────────────────────────────────────────
@@ -909,8 +992,8 @@ async function loadAndRender() {
 async function init() {
   translateDOM();
   wireEvents();
+  applyAuthState();
   await loadAndRender();
-  history.replaceState({ screen: 'categories' }, '');
 }
 
 document.addEventListener('DOMContentLoaded', () => init());

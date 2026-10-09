@@ -82,7 +82,7 @@ header {
 
 header h1 {
   font-family: 'Luckiest Guy', cursive;
-  font-size: 1.4rem;
+  font-size: 1.75rem;
   font-weight: 400;
   white-space: nowrap;
   color: #fff;
@@ -620,13 +620,53 @@ header h1 .md-icon { width: 1.6rem; height: 1.6rem; }
 }
 .dynamic-item select:focus { border-color: var(--clr-primary); }
 
-.recipe-photo {
+.recipe-photo-frame {
+  position: relative;
   display: block;
   width: 100%;
-  max-height: 300px;
-  object-fit: cover;
+  height: 320px;
+  padding: 0;
+  border: 0;
+  overflow: hidden;
   border-radius: var(--radius);
   margin-bottom: 1rem;
+  background: var(--clr-primary-lt);
+  cursor: zoom-in;
+}
+
+.recipe-photo-bg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  filter: blur(24px) brightness(.7);
+  transform: scale(1.2);
+}
+
+.recipe-photo {
+  position: relative;
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.lightbox-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 300;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  background: rgba(0,0,0,.85);
+  cursor: zoom-out;
+}
+.lightbox-overlay img {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
 }
 
 .form-image-preview {
@@ -751,6 +791,7 @@ footer {
   .recipe-grid { grid-template-columns: 1fr; }
 
   #recipe-detail { padding: 1.25rem; }
+  .recipe-photo-frame { height: 220px; }
   #recipe-detail h2 { font-size: 1.4rem; }
 
   .modal { padding: 1.5rem; }
@@ -765,6 +806,33 @@ footer {
   header { padding: .6rem 1rem; }
   .layout { padding: .75rem; }
   #view-categories-home { padding: .75rem; }
-  header h1 { font-size: 1.15rem; }
+  header h1 { font-size: 1.75rem; }
   .search-wrapper { max-width: 75px; }
 }
+
+/* ── Admin-only controls ─────────────────────────────────────────────────── */
+
+body:not(.is-admin) .admin-only { display: none !important; }
+
+#login-pin {
+  width: 100%;
+  padding: .6rem .85rem;
+  border: 1.5px solid var(--clr-border, #ddd);
+  border-radius: var(--radius-sm);
+  font: inherit;
+  letter-spacing: .3em;
+}
+
+.btn-link {
+  background: none;
+  border: none;
+  padding: 0;
+  margin-top: .25rem;
+  font: inherit;
+  font-size: .8rem;
+  color: inherit;
+  opacity: .7;
+  cursor: pointer;
+  text-decoration: underline;
+}
+.btn-link:hover { opacity: 1; }

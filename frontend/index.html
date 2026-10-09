@@ -37,7 +37,7 @@
           <h1 id="logo">marellis</h1>
         </div>
         <div class="header-actions">
-          <button id="btn-add-recipe" class="btn btn-primary">
+          <button id="btn-add-recipe" class="btn btn-primary admin-only">
             <svg class="md-icon" aria-hidden="true"><use href="#icon-add"/></svg>
             <span class="btn-label">Add Recipe</span>
           </button>
@@ -95,7 +95,7 @@
     </div>
 
     <!-- Floating Action Button (mobile) -->
-    <button id="fab-add" class="fab" aria-label="Add Recipe" title="Add Recipe">
+    <button id="fab-add" class="fab admin-only" aria-label="Add Recipe" title="Add Recipe">
       <svg class="md-icon" aria-hidden="true"><use href="#icon-add"/></svg>
     </button>
 
@@ -175,8 +175,38 @@
       </div>
     </div>
 
+    <!-- Image lightbox -->
+    <div id="lightbox-overlay" class="lightbox-overlay hidden" role="dialog" aria-modal="true" aria-label="Image">
+      <img id="lightbox-img" alt="" />
+    </div>
+
+    <!-- Admin login modal -->
+    <div id="login-overlay" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="login-title">
+      <div class="modal modal-sm">
+        <h2 id="login-title">Admin login</h2>
+        <form id="login-form">
+          <input
+            type="password"
+            id="login-pin"
+            inputmode="numeric"
+            pattern="[0-9]*"
+            autocomplete="current-password"
+            placeholder="PIN code"
+            aria-label="PIN code"
+            required
+          />
+          <p id="login-error" class="form-error hidden" role="alert"></p>
+          <div class="form-actions">
+            <button type="submit" class="btn btn-primary">Log in</button>
+            <button type="button" class="btn btn-ghost" id="btn-cancel-login">Cancel</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
     <footer>
       <p>&copy; 2026 Marellis</p>
+      <button id="btn-auth" class="btn-link" type="button">Admin login</button>
     </footer>
 
     <script src="i18n.js"></script>
