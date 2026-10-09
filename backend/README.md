@@ -125,6 +125,8 @@ curl -X POST http://localhost:8080/api/v1/recipes \
   }'
 ```
 
+Optional thumbnail crop fields (create and update; responses always include them, `null` meaning centred with no zoom): `thumb_x` and `thumb_y` (0-100, the part of the image shown in the list thumbnail) and `thumb_zoom` (0.05-5; 1 fits the image to cover the frame, lower values show the whole image). The frontend uses them to frame the image in the recipe list. `PUT` replaces them, so omitting them resets the crop.
+
 ### Upload Recipe Image
 
 Requires R2 configuration and an existing recipe.
@@ -146,7 +148,7 @@ curl -X DELETE http://localhost:8080/api/v1/recipes/1/image
 
 ## Database
 
-`migrations/001_create_tables.sql` creates the base `recipes` table and indexes. `migrations/002_add_recipe_metadata.sql` adds `oven_temperature` and `image_url`.
+`migrations/001_create_tables.sql` creates the base `recipes` table and indexes. `migrations/002_add_recipe_metadata.sql` adds `oven_temperature` and `image_url`. `migrations/003_add_thumbnail_crop.sql` adds `thumb_x`, `thumb_y` and `thumb_zoom`.
 
 Startup applies ordered SQL migrations once and records them in `schema_migrations`. Fresh databases reach the latest schema, and old databases are upgraded without resetting recipe data.
 

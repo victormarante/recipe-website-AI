@@ -224,3 +224,40 @@ func TestLoginRejectsWrongPINAndRateLimits(t *testing.T) {
 		t.Fatalf("expected 429, got %d", rr.Code)
 	}
 }
+
+func TestThumbnailCropValidationAndRoundTrip(t *testing.T) {
+	h := setupRouter(t)
+	auth := login(t, h)
+
+	post := func(crop string) *httptest.ResponseRecorder {
+		body := `{"title":"T","categories":["a"],"ingredients":["i"],"steps":["s"]` + crop + `}`
+		rr := httptest.NewRecorder()
+		req := httptest.NewRequest(http.MethodPost, "/api/v1/recipes", strings.NewReader(body))
+		req.Header.Set("Content-Type", "application/json")
+		req.Header.Set("Authorization", auth)
+		h.ServeHTTP(rr, req)
+		return rr
+	}
+
+	for _, bad := range []string{`,"thumb_x":101`, `,"thumb_y":-1`, `,"thumb_zoom":0.01`, `,"thumb_zoom":6`} {
+		if rr := post(bad); rr.Code != http.StatusBadRequest {
+			t.Fatalf("%s expected 400, got %d", bad, rr.Code)
+		}
+	}
+
+	rr := post(`,"thumb_x":30.5,"thumb_y":0,"thumb_zoom":0.19`)
+	if rr.Code != http.StatusCreated {
+		t.Fatalf("valid crop expected 201, got %d body %s", rr.Code, rr.Body.String())
+	}
+	var got struct {
+		ThumbX    *float64 `json:"thumb_x"`
+		ThumbY    *float64 `json:"thumb_y"`
+		ThumbZoom *float64 `json:"thumb_zoom"`
+	}
+	if err := json.Unmarshal(rr.Body.Bytes(), &got); err != nil {
+		t.Fatalf("decode: %v", err)
+	}
+	if got.ThumbX == nil || *got.ThumbX != 30.5 || got.ThumbY == nil || *got.ThumbY != 0 || got.ThumbZoom == nil || *got.ThumbZoom != 0.19 {
+		t.Fatalf("crop not round-tripped: %s", rr.Body.String())
+	}
+}

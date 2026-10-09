@@ -13,6 +13,9 @@ type Recipe struct {
 	Links           []Link    `json:"links" db:"links"`
 	OvenTemperature *int      `json:"oven_temperature" db:"oven_temperature"`
 	ImageURL        *string   `json:"image_url" db:"image_url"`
+	ThumbX          *float64  `json:"thumb_x" db:"thumb_x"`
+	ThumbY          *float64  `json:"thumb_y" db:"thumb_y"`
+	ThumbZoom       *float64  `json:"thumb_zoom" db:"thumb_zoom"`
 	CreatedAt       time.Time `json:"created_at" db:"created_at"`
 	UpdatedAt       time.Time `json:"updated_at" db:"updated_at"`
 }
@@ -34,6 +37,12 @@ type CreateRecipeRequest struct {
 	Steps           []string `json:"steps" validate:"required,min=1"`
 	Links           []Link   `json:"links"`
 	OvenTemperature *int     `json:"oven_temperature"`
+	// Thumbnail crop for the list view: focal point as a percentage of the
+	// image (0-100) and zoom factor (0.05-5, 1 = image just covers the
+	// frame, below 1 shows the whole image with a backdrop). Nil means centred, no zoom.
+	ThumbX    *float64 `json:"thumb_x" validate:"omitempty,gte=0,lte=100"`
+	ThumbY    *float64 `json:"thumb_y" validate:"omitempty,gte=0,lte=100"`
+	ThumbZoom *float64 `json:"thumb_zoom" validate:"omitempty,gte=0.05,lte=5"`
 }
 
 // UpdateRecipeRequest represents the request body for updating a recipe
@@ -45,6 +54,12 @@ type UpdateRecipeRequest struct {
 	Steps           []string `json:"steps" validate:"required,min=1"`
 	Links           []Link   `json:"links"`
 	OvenTemperature *int     `json:"oven_temperature"`
+	// Thumbnail crop for the list view: focal point as a percentage of the
+	// image (0-100) and zoom factor (0.05-5, 1 = image just covers the
+	// frame, below 1 shows the whole image with a backdrop). Nil means centred, no zoom.
+	ThumbX    *float64 `json:"thumb_x" validate:"omitempty,gte=0,lte=100"`
+	ThumbY    *float64 `json:"thumb_y" validate:"omitempty,gte=0,lte=100"`
+	ThumbZoom *float64 `json:"thumb_zoom" validate:"omitempty,gte=0.05,lte=5"`
 }
 
 // ErrorResponse represents an error response
