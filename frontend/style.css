@@ -401,13 +401,30 @@ header h1 .md-icon { width: 1.6rem; height: 1.6rem; }
 }
 .recipe-card:hover { transform: translateY(-2px); box-shadow: var(--shadow-md); }
 
-.recipe-card-img {
+/* Thumbnail frame: aspect ratio must match THUMB_ASPECT in app.js and .thumb-box. */
+.recipe-card-thumb {
+  position: relative;
   width: calc(100% + 2.4rem);
-  height: 140px;
-  object-fit: cover;
+  aspect-ratio: 2 / 1;
+  overflow: hidden;
   border-radius: var(--radius) var(--radius) 0 0;
   margin: -1.1rem -1.2rem .75rem -1.2rem;
+  background: var(--clr-primary-lt);
+}
+.recipe-card-thumb::before,
+.thumb-box::before {
+  content: '';
+  position: absolute;
+  inset: -24px;
+  background: var(--thumb-src) center / cover;
+  filter: blur(18px) brightness(.8);
+}
+.recipe-card-thumb img,
+.thumb-box img {
+  position: absolute;
   display: block;
+  max-width: none;
+  user-select: none;
 }
 
 .recipe-card h3 { font-size: 1.05rem; color: var(--clr-primary); font-weight: 700; }
@@ -671,17 +688,26 @@ header h1 .md-icon { width: 1.6rem; height: 1.6rem; }
 
 .form-image-preview {
   display: flex;
-  align-items: center;
-  gap: .75rem;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: .5rem;
   margin-top: .5rem;
   margin-bottom: .5rem;
 }
-.form-image-preview img {
-  max-height: 80px;
-  max-width: 120px;
+.thumb-hint { font-size: .85rem; color: var(--clr-muted); margin: 0; }
+.thumb-box {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 2 / 1;
+  overflow: hidden;
   border-radius: var(--radius-sm);
-  object-fit: cover;
+  background: var(--clr-primary-lt);
+  cursor: grab;
+  touch-action: none;
 }
+.thumb-box.dragging { cursor: grabbing; }
+.thumb-zoom-label { margin: 0; }
+#thumb-zoom { width: 100%; accent-color: var(--clr-primary); }
 
 .form-error {
   color: var(--clr-danger);

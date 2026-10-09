@@ -145,7 +145,12 @@
           <label for="form-image">Photo <small>(optional, max 5 MB)</small></label>
           <input type="file" id="form-image" accept="image/*" />
           <div id="form-image-preview" class="form-image-preview hidden">
-            <img id="form-image-preview-img" src="" alt="Current photo" />
+            <p class="thumb-hint">Drag the photo to choose how it appears in the recipe list</p>
+            <div id="thumb-box" class="thumb-box">
+              <img id="form-image-preview-img" src="" alt="Current photo" draggable="false" />
+            </div>
+            <label for="thumb-zoom" class="thumb-zoom-label">Zoom</label>
+            <input type="range" id="thumb-zoom" min="1" max="3" step="0.01" value="1" />
             <button type="button" class="btn btn-ghost btn-sm" id="btn-remove-image">Remove photo</button>
           </div>
 

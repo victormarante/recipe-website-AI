@@ -9,6 +9,7 @@ let state = {
   editingId: null,
   pendingDeleteId: null,
   pendingRemoveImage: false,
+  thumb: { x: 50, y: 50, zoom: 1 },
 };
 
 // ── DOM refs ─────────────────────────────────────────────────────────────────
@@ -29,6 +30,47 @@ const deleteOverlay = $('#delete-overlay');
 const lightboxOverlay = $('#lightbox-overlay');
 const lightboxImg   = $('#lightbox-img');
 const recipeForm    = $('#recipe-form');
+
+// ── Thumbnail crop ────────────────────────────────────────────────────────────
+
+// Frame shape for list thumbnails (width / height). Keep in sync with the
+// aspect-ratio of .recipe-card-thumb and .thumb-box in style.css.
+const THUMB_ASPECT = 2;
+
+// Lays an absolutely positioned <img> out inside a THUMB_ASPECT frame.
+// x/y (0-100) pick which part of the overflow is shown (50 = centred, like
+// object-position); zoom scales the cover-fitted image (1 = just covers the
+// frame, below 1 = whole image visible, with the frame backdrop around it). Everything is a
+// percentage of the frame, so it needs no resize handling. Defaults are a
+// centred cover fit, so uncropped recipes look as they did before.
+function applyThumbCrop(img, crop) {
+  const x = crop?.x ?? 50;
+  const y = crop?.y ?? 50;
+  const zoom = crop?.zoom ?? 1;
+  const apply = () => {
+    const ratio = img.naturalWidth / img.naturalHeight;
+    const wPct = zoom * Math.max(1, ratio / THUMB_ASPECT) * 100;
+    const hPct = (wPct * THUMB_ASPECT) / ratio;
+    img.style.width = `${wPct}%`;
+    img.style.height = `${hPct}%`;
+    img.style.left = `${-(wPct - 100) * x / 100}%`;
+    img.style.top = `${-(hPct - 100) * y / 100}%`;
+  };
+  if (img.complete && img.naturalWidth) apply();
+  else img.addEventListener('load', apply, { once: true });
+}
+
+// Blurred copy of the photo behind the thumbnail (see ::before in style.css),
+// visible only where the zoomed-out image doesn't cover the frame.
+function setThumbBackdrop(frame, src) {
+  frame.style.setProperty('--thumb-src', `url(${JSON.stringify(src)})`);
+}
+
+// Lowest zoom that still shows the whole image inside the frame.
+function minThumbZoom(img) {
+  const ratio = img.naturalWidth / img.naturalHeight;
+  return Math.max(0.05, Math.ceil(Math.min(ratio / THUMB_ASPECT, THUMB_ASPECT / ratio) * 100) / 100);
+}
 
 // ── Icon helper ───────────────────────────────────────────────────────────────
 
@@ -158,11 +200,16 @@ function buildCard(recipe) {
   actions.appendChild(delBtn);
 
   if (recipe.image_url) {
+    const thumbFrame = document.createElement('div');
+    thumbFrame.className = 'recipe-card-thumb';
     const thumb = document.createElement('img');
-    thumb.src = recipe.image_url;
     thumb.alt = recipe.title;
-    thumb.className = 'recipe-card-img';
-    card.appendChild(thumb);
+    thumb.loading = 'lazy';
+    applyThumbCrop(thumb, { x: recipe.thumb_x, y: recipe.thumb_y, zoom: recipe.thumb_zoom });
+    setThumbBackdrop(thumbFrame, recipe.image_url);
+    thumb.src = recipe.image_url;
+    thumbFrame.appendChild(thumb);
+    card.appendChild(thumbFrame);
   }
 
   card.appendChild(h3);
@@ -436,6 +483,73 @@ function getCategoryEmoji(cat) {
 
 // ── Modal: Add / Edit ─────────────────────────────────────────────────────────
 
+function showThumbEditor(src, crop) {
+  state.thumb = { x: crop?.x ?? 50, y: crop?.y ?? 50, zoom: crop?.zoom ?? 1 };
+  const img = $('#form-image-preview-img');
+  const zoom = $('#thumb-zoom');
+  zoom.value = state.thumb.zoom;
+  applyThumbCrop(img, state.thumb);
+  setThumbBackdrop($('#thumb-box'), src);
+  img.addEventListener('load', () => {
+    zoom.min = Math.min(1, minThumbZoom(img));
+    state.thumb.zoom = Math.max(state.thumb.zoom, parseFloat(zoom.min));
+    zoom.value = state.thumb.zoom;
+    applyThumbCrop(img, state.thumb);
+  }, { once: true });
+  img.src = src;
+  $('#form-image-preview').classList.remove('hidden');
+}
+
+function hideThumbEditor() {
+  $('#form-image-preview').classList.add('hidden');
+}
+
+function initThumbEditor() {
+  const box = $('#thumb-box');
+  const img = $('#form-image-preview-img');
+  const refresh = () => applyThumbCrop(img, state.thumb);
+  let drag = null;
+
+  box.addEventListener('pointerdown', e => {
+    drag = { px: e.clientX, py: e.clientY };
+    box.setPointerCapture(e.pointerId);
+    box.classList.add('dragging');
+  });
+  box.addEventListener('pointermove', e => {
+    if (!drag) return;
+    const b = box.getBoundingClientRect();
+    const i = img.getBoundingClientRect();
+    // Positive when the image is larger than the frame, negative when smaller
+    // (then it moves within the free space instead).
+    const overflowX = i.width - b.width;
+    const overflowY = i.height - b.height;
+    // Dragging the image right reveals more of its left side, so the focal % drops.
+    if (Math.abs(overflowX) > 1) state.thumb.x = Math.min(100, Math.max(0, state.thumb.x - ((e.clientX - drag.px) / overflowX) * 100));
+    if (Math.abs(overflowY) > 1) state.thumb.y = Math.min(100, Math.max(0, state.thumb.y - ((e.clientY - drag.py) / overflowY) * 100));
+    drag.px = e.clientX;
+    drag.py = e.clientY;
+    refresh();
+  });
+  const end = () => { drag = null; box.classList.remove('dragging'); };
+  box.addEventListener('pointerup', end);
+  box.addEventListener('pointercancel', end);
+
+  $('#thumb-zoom').addEventListener('input', e => {
+    state.thumb.zoom = parseFloat(e.target.value);
+    refresh();
+  });
+
+  let objectURL = null;
+  $('#form-image').addEventListener('change', e => {
+    if (objectURL) { URL.revokeObjectURL(objectURL); objectURL = null; }
+    const file = e.target.files[0];
+    if (!file) return;
+    objectURL = URL.createObjectURL(file);
+    state.pendingRemoveImage = false;
+    showThumbEditor(objectURL, null);
+  });
+}
+
 function openAddModal() {
   state.editingId = null;
   state.pendingRemoveImage = false;
@@ -447,7 +561,7 @@ function openAddModal() {
   clearDynamicList('links-list');
   addIngredientRow('');
   addStepRow('');
-  $('#form-image-preview').classList.add('hidden');
+  hideThumbEditor();
   modalOverlay.classList.remove('hidden');
   $('#form-title').focus();
 }
@@ -476,13 +590,10 @@ function openEditModal(id) {
   clearDynamicList('links-list');
   (recipe.links || []).forEach(link => addLinkRow(link));
 
-  const preview = $('#form-image-preview');
-  const previewImg = $('#form-image-preview-img');
   if (recipe.image_url) {
-    previewImg.src = recipe.image_url;
-    preview.classList.remove('hidden');
+    showThumbEditor(recipe.image_url, { x: recipe.thumb_x, y: recipe.thumb_y, zoom: recipe.thumb_zoom });
   } else {
-    preview.classList.add('hidden');
+    hideThumbEditor();
   }
   $('#form-image').value = '';
 
@@ -698,6 +809,15 @@ function clearFormError() {
   el.classList.add('hidden');
 }
 
+// Crop fields for the save request; null (default crop) when the form has no photo.
+function thumbCropFields() {
+  if ($('#form-image-preview').classList.contains('hidden')) {
+    return { thumb_x: null, thumb_y: null, thumb_zoom: null };
+  }
+  const r = (n, d) => Math.round(n * d) / d;
+  return { thumb_x: r(state.thumb.x, 10), thumb_y: r(state.thumb.y, 10), thumb_zoom: r(state.thumb.zoom, 100) };
+}
+
 async function handleFormSubmit(e) {
   e.preventDefault();
   clearFormError();
@@ -726,6 +846,7 @@ async function handleFormSubmit(e) {
     steps,
     links,
     oven_temperature: ovenTempVal ? parseInt(ovenTempVal, 10) : null,
+    ...thumbCropFields(),
   };
 
   const editingId = state.editingId;
@@ -886,9 +1007,11 @@ function wireEvents() {
   $('#btn-add-step').addEventListener('click', () => addStepRow(''));
   $('#btn-add-link').addEventListener('click', () => addLinkRow());
 
+  initThumbEditor();
+
   $('#btn-remove-image').addEventListener('click', () => {
     state.pendingRemoveImage = true;
-    $('#form-image-preview').classList.add('hidden');
+    hideThumbEditor();
     $('#form-image').value = '';
   });
 

@@ -54,6 +54,8 @@ const TRANSLATIONS = {
       '(optional, max 5 MB)': '(valfritt, max 5 MB)',
       'Current photo': 'Nuvarande foto',
       'Remove photo': 'Ta bort foto',
+      'Drag the photo to choose how it appears in the recipe list': 'Dra i bilden för att välja hur den visas i receptlistan',
+      'Zoom': 'Zoom',
       'Save Recipe': 'Spara recept',
       'Cancel': 'Avbryt',
       'View full image': 'Visa hela bilden',
