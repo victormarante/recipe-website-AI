@@ -2,6 +2,10 @@
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
 :root {
+  --font-body:    'Indie Flower', 'Segoe UI', system-ui, -apple-system, sans-serif;
+  --font-logo:    'Luckiest Guy', cursive;
+  --font-heading: inherit;
+  --font-ui:      inherit;
   --clr-primary:    #7c3aed;
   --clr-primary-dk: #6d28d9;
   --clr-primary-lt: #ede9fe;
@@ -32,7 +36,7 @@ html {
 }
 
 body {
-  font-family: 'Indie Flower', 'Segoe UI', system-ui, -apple-system, sans-serif;
+  font-family: var(--font-body);
   background: var(--clr-bg);
   color: var(--clr-text);
   min-height: 100vh;
@@ -81,7 +85,7 @@ header {
 }
 
 header h1 {
-  font-family: 'Luckiest Guy', cursive;
+  font-family: var(--font-logo);
   font-size: 1.75rem;
   font-weight: 400;
   white-space: nowrap;
@@ -141,7 +145,7 @@ header h1 .md-icon { width: 1.6rem; height: 1.6rem; }
   background: rgba(255,255,255,.12);
   color: var(--clr-sidebar-tx);
   font-size: .9rem;
-  font-family: inherit;
+  font-family: var(--font-ui);
   width: 73px;
   transition: var(--transition);
   outline: none;
@@ -163,7 +167,7 @@ header h1 .md-icon { width: 1.6rem; height: 1.6rem; }
   border-radius: 24px;
   font-size: .9rem;
   font-weight: 500;
-  font-family: inherit;
+  font-family: var(--font-ui);
   cursor: pointer;
   transition: var(--transition);
   white-space: nowrap;
@@ -200,7 +204,7 @@ header h1 .md-icon { width: 1.6rem; height: 1.6rem; }
   color: var(--clr-primary);
   border: none;
   font-weight: 500;
-  font-family: inherit;
+  font-family: var(--font-ui);
   padding: .4rem .7rem;
   cursor: pointer;
   font-size: .95rem;
@@ -279,7 +283,7 @@ header h1 .md-icon { width: 1.6rem; height: 1.6rem; }
 .category-home-card:hover::before { opacity: 1; }
 
 .cat-emoji { font-size: 2.2rem; line-height: 1; }
-.category-home-card h3 { font-size: 1.15rem; font-weight: 700; }
+.category-home-card h3 { font-family: var(--font-heading); font-size: 1.15rem; font-weight: 700; }
 .cat-count {
   font-size: .8rem;
   color: var(--clr-primary);
@@ -327,6 +331,7 @@ header h1 .md-icon { width: 1.6rem; height: 1.6rem; }
 }
 
 #sidebar h2 {
+  font-family: var(--font-heading);
   font-size: .75rem;
   text-transform: uppercase;
   letter-spacing: .1em;
@@ -336,6 +341,13 @@ header h1 .md-icon { width: 1.6rem; height: 1.6rem; }
 }
 
 #category-list { list-style: none; }
+
+/* ── Font picker (temporary, for trying out fonts) ── */
+.font-picker { margin-top: 1.25rem; padding-top: 1rem; border-top: 1px solid var(--clr-primary-lt); }
+.font-picker label { display: block; font-size: .8rem; color: var(--clr-muted); margin-top: .5rem; }
+.font-picker input { width: 100%; padding: .35rem .5rem; border: 1px solid var(--clr-primary-lt); border-radius: var(--radius); font-size: 1rem; }
+.font-picker .font-error { color: var(--clr-danger); font-size: .8rem; min-height: 1em; }
+.font-picker button { margin-top: .75rem; }
 
 #category-list li { margin-bottom: .25rem; }
 
@@ -377,7 +389,7 @@ header h1 .md-icon { width: 1.6rem; height: 1.6rem; }
   margin-bottom: 1.25rem;
 }
 
-.view-header h2 { font-size: 1.4rem; font-weight: 700; }
+.view-header h2 { font-family: var(--font-heading); font-size: 1.4rem; font-weight: 700; }
 
 /* ── Recipe grid ──────────────────────────────────── */
 .recipe-grid {
@@ -427,7 +439,7 @@ header h1 .md-icon { width: 1.6rem; height: 1.6rem; }
   user-select: none;
 }
 
-.recipe-card h3 { font-size: 1.05rem; color: var(--clr-primary); font-weight: 700; }
+.recipe-card h3 { font-family: var(--font-heading); font-size: 1.05rem; color: var(--clr-primary); font-weight: 700; }
 .recipe-card p  { font-size: .87rem; color: var(--clr-muted); flex: 1; line-height: 1.5; }
 
 .card-tags {
@@ -464,7 +476,7 @@ header h1 .md-icon { width: 1.6rem; height: 1.6rem; }
   padding: 2rem;
 }
 
-#recipe-detail h2 { font-size: 1.8rem; color: var(--clr-primary); margin-bottom: .5rem; font-weight: 700; }
+#recipe-detail h2 { font-family: var(--font-heading); font-size: 1.8rem; color: var(--clr-primary); margin-bottom: .5rem; font-weight: 700; }
 
 .detail-meta {
   display: flex;
@@ -569,7 +581,7 @@ header h1 .md-icon { width: 1.6rem; height: 1.6rem; }
 }
 .modal-sm { max-width: 400px; }
 
-.modal h2 { margin-bottom: 1.25rem; font-size: 1.4rem; font-weight: 700; color: var(--clr-primary); }
+.modal h2 { font-family: var(--font-heading); margin-bottom: 1.25rem; font-size: 1.4rem; font-weight: 700; color: var(--clr-primary); }
 
 /* ── Form ─────────────────────────────────────────── */
 #recipe-form label {
@@ -589,7 +601,7 @@ header h1 .md-icon { width: 1.6rem; height: 1.6rem; }
   border: 1.5px solid var(--clr-border);
   border-radius: var(--radius-sm);
   font-size: .9rem;
-  font-family: inherit;
+  font-family: var(--font-ui);
   transition: var(--transition);
   outline: none;
   color: var(--clr-text);
@@ -614,7 +626,7 @@ header h1 .md-icon { width: 1.6rem; height: 1.6rem; }
   border: 1.5px solid var(--clr-border);
   border-radius: var(--radius-sm);
   font-size: .88rem;
-  font-family: inherit;
+  font-family: var(--font-ui);
   outline: none;
   transition: var(--transition);
   color: var(--clr-text);
@@ -631,7 +643,7 @@ header h1 .md-icon { width: 1.6rem; height: 1.6rem; }
   font-size: .88rem;
   outline: none;
   background: #fff;
-  font-family: inherit;
+  font-family: var(--font-ui);
   transition: var(--transition);
   color: var(--clr-text);
 }
@@ -752,7 +764,7 @@ header h1 .md-icon { width: 1.6rem; height: 1.6rem; }
   border: 1.5px solid var(--clr-border);
   border-radius: var(--radius-sm);
   font-size: .88rem;
-  font-family: inherit;
+  font-family: var(--font-ui);
   outline: none;
   transition: var(--transition);
   color: var(--clr-text);
@@ -797,6 +809,7 @@ footer {
     border-radius: 0;
     z-index: 160;
     padding-top: 5rem; /* clears the sticky header (~56px) */
+    overflow-y: auto;
     transform: translateX(-100%);
     transition: transform var(--transition);
     box-shadow: none;
