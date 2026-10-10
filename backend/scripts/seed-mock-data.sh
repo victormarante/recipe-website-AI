@@ -1,12 +1,18 @@
 #!/usr/bin/env bash
 # Seeds a local backend with a few Swedish mock recipes.
 # Usage: backend/scripts/seed-mock-data.sh [API_BASE_URL]   (default http://localhost:8080)
+# Env:   ADMIN_PIN (default 123456, the development default). Writes require an admin token.
 set -euo pipefail
 
-API="${1:-http://localhost:8080}/api/v1/recipes"
+BASE="${1:-http://localhost:8080}/api/v1"
+API="$BASE/recipes"
+PIN="${ADMIN_PIN:-123456}"
+
+TOKEN=$(curl -fsS -X POST "$BASE/auth/login" -H 'Content-Type: application/json' \
+  -d "{\"pin\":\"$PIN\"}" | sed -E 's/.*"token":"([^"]*)".*/\1/')
 
 post() {
-  curl -fsS -X POST "$API" -H 'Content-Type: application/json' -d "$1" > /dev/null
+  curl -fsS -X POST "$API" -H "Authorization: Bearer $TOKEN" -H 'Content-Type: application/json' -d "$1" > /dev/null
   echo "Skapade: $(echo "$1" | sed -E 's/.*"title":"([^"]*)".*/\1/')"
 }
 
