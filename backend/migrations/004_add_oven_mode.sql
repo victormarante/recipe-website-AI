@@ -1,0 +1,1 @@
+ALTER TABLE recipes ADD COLUMN oven_mode TEXT DEFAULT NULL;

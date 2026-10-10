@@ -27,8 +27,8 @@ func TestRunMigrationsFreshDatabase(t *testing.T) {
 	if err := db.Get(&count, `SELECT COUNT(*) FROM schema_migrations`); err != nil {
 		t.Fatalf("count migrations: %v", err)
 	}
-	if count != 3 {
-		t.Fatalf("expected 3 migrations, got %d", count)
+	if count != 4 {
+		t.Fatalf("expected 4 migrations, got %d", count)
 	}
 
 	if err := database.RunMigrations(db, filepath.Join("..", "..", "migrations")); err != nil {

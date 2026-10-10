@@ -12,6 +12,7 @@ type Recipe struct {
 	Steps           []string  `json:"steps" db:"steps" validate:"required,min=1"`
 	Links           []Link    `json:"links" db:"links"`
 	OvenTemperature *int      `json:"oven_temperature" db:"oven_temperature"`
+	OvenMode        *string   `json:"oven_mode" db:"oven_mode"`
 	ImageURL        *string   `json:"image_url" db:"image_url"`
 	ThumbX          *float64  `json:"thumb_x" db:"thumb_x"`
 	ThumbY          *float64  `json:"thumb_y" db:"thumb_y"`
@@ -37,6 +38,8 @@ type CreateRecipeRequest struct {
 	Steps           []string `json:"steps" validate:"required,min=1"`
 	Links           []Link   `json:"links"`
 	OvenTemperature *int     `json:"oven_temperature"`
+	// "fan" (convection) or "conventional" (top and bottom heat). Nil means unspecified.
+	OvenMode *string `json:"oven_mode" validate:"omitempty,oneof=fan conventional"`
 	// Thumbnail crop for the list view: focal point as a percentage of the
 	// image (0-100) and zoom factor (0.05-5, 1 = image just covers the
 	// frame, below 1 shows the whole image with a backdrop). Nil means centred, no zoom.
@@ -54,6 +57,8 @@ type UpdateRecipeRequest struct {
 	Steps           []string `json:"steps" validate:"required,min=1"`
 	Links           []Link   `json:"links"`
 	OvenTemperature *int     `json:"oven_temperature"`
+	// "fan" (convection) or "conventional" (top and bottom heat). Nil means unspecified.
+	OvenMode *string `json:"oven_mode" validate:"omitempty,oneof=fan conventional"`
 	// Thumbnail crop for the list view: focal point as a percentage of the
 	// image (0-100) and zoom factor (0.05-5, 1 = image just covers the
 	// frame, below 1 shows the whole image with a backdrop). Nil means centred, no zoom.

@@ -17,7 +17,7 @@ frontend/
 
 - Calls the backend API through `frontend/api.js`
 - Supports browsing categories, searching, viewing details, and recipe CRUD
-- Supports optional oven temperature
+- Supports optional oven temperature; when set, an oven mode (fan or conventional) must be chosen
 - Supports optional image upload/delete when backend R2 storage is configured
 - Uses no frontend build tool or package manager
 

@@ -133,3 +133,41 @@ func TestRecipeRepositoryMissingRecipe(t *testing.T) {
 		t.Fatalf("UpdateImageURL expected ErrNotFound, got %v", err)
 	}
 }
+
+func TestRecipeRepositoryOvenMode(t *testing.T) {
+	repo := setupRepo(t)
+
+	created, err := repo.Create(validRecipe("No Oven"))
+	if err != nil {
+		t.Fatalf("Create: %v", err)
+	}
+	if created.OvenMode != nil {
+		t.Fatalf("expected nil oven mode by default, got %q", *created.OvenMode)
+	}
+
+	mode := "fan"
+	req := validRecipe("Fan Bake")
+	req.OvenMode = &mode
+	fan, err := repo.Create(req)
+	if err != nil {
+		t.Fatalf("Create with mode: %v", err)
+	}
+	if fan.OvenMode == nil || *fan.OvenMode != "fan" {
+		t.Fatalf("unexpected oven mode: %#v", fan.OvenMode)
+	}
+
+	conventional := "conventional"
+	updated, err := repo.Update(fan.ID, models.UpdateRecipeRequest{
+		Title:       "Fan Bake",
+		Categories:  []string{"Dinner"},
+		Ingredients: []string{"x"},
+		Steps:       []string{"y"},
+		OvenMode:    &conventional,
+	})
+	if err != nil {
+		t.Fatalf("Update: %v", err)
+	}
+	if updated.OvenMode == nil || *updated.OvenMode != "conventional" {
+		t.Fatalf("unexpected updated oven mode: %#v", updated.OvenMode)
+	}
+}

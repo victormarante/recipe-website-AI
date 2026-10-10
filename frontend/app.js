@@ -12,6 +12,12 @@ let state = {
   thumb: { x: 50, y: 50, zoom: 1 },
 };
 
+// Stored oven_mode values (English) mapped to their UI label keys.
+const OVEN_MODE_LABELS = {
+  fan: 'Fan oven',
+  conventional: 'Conventional (top and bottom heat)',
+};
+
 // ── DOM refs ─────────────────────────────────────────────────────────────────
 
 const $ = (sel, ctx = document) => ctx.querySelector(sel);
@@ -324,7 +330,8 @@ function renderDetail(id) {
     const ovenH3 = document.createElement('h3');
     ovenH3.textContent = t('Oven Temperature');
     const ovenP = document.createElement('p');
-    ovenP.textContent = `${recipe.oven_temperature}°C`;
+    const ovenModeLabel = OVEN_MODE_LABELS[recipe.oven_mode];
+    ovenP.textContent = `${recipe.oven_temperature}°C` + (ovenModeLabel ? ` · ${t(ovenModeLabel)}` : '');
     ovenSection.appendChild(ovenH3);
     ovenSection.appendChild(ovenP);
     recipeDetail.appendChild(ovenSection);
@@ -576,6 +583,7 @@ function openEditModal(id) {
   $('#form-title').value = recipe.title;
   $('#form-description').value = recipe.description || '';
   $('#form-oven-temp').value = recipe.oven_temperature ?? '';
+  $$('input[name="form-oven-mode"]').forEach(input => { input.checked = input.value === recipe.oven_mode; });
   $('#form-categories').value = (recipe.categories || []).join(', ');
   $('#form-tags').value = '';
 
@@ -838,6 +846,9 @@ async function handleFormSubmit(e) {
   const links = collectLinks();
 
   const ovenTempVal = $('#form-oven-temp').value;
+  const ovenModeChecked = document.querySelector('input[name="form-oven-mode"]:checked');
+  if (ovenTempVal && !ovenModeChecked) { showFormError(t('Please select an oven mode.')); return; }
+
   const recipeData = {
     title,
     description: $('#form-description').value.trim(),
@@ -846,6 +857,7 @@ async function handleFormSubmit(e) {
     steps,
     links,
     oven_temperature: ovenTempVal ? parseInt(ovenTempVal, 10) : null,
+    oven_mode: ovenTempVal ? ovenModeChecked.value : null,
     ...thumbCropFields(),
   };
 

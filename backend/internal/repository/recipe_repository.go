@@ -34,6 +34,7 @@ type dbRecipe struct {
 	Steps           string   `db:"steps"`
 	Links           string   `db:"links"`
 	OvenTemperature *int     `db:"oven_temperature"`
+	OvenMode        *string  `db:"oven_mode"`
 	ImageURL        *string  `db:"image_url"`
 	ThumbX          *float64 `db:"thumb_x"`
 	ThumbY          *float64 `db:"thumb_y"`
@@ -51,8 +52,8 @@ func (r *RecipeRepository) Create(req models.CreateRecipeRequest) (*models.Recip
 	linksJSON, _ := json.Marshal(req.Links)
 
 	query := `
-		INSERT INTO recipes (title, description, categories, ingredients, steps, links, oven_temperature, thumb_x, thumb_y, thumb_zoom)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+		INSERT INTO recipes (title, description, categories, ingredients, steps, links, oven_temperature, oven_mode, thumb_x, thumb_y, thumb_zoom)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 	`
 
 	result, err := r.db.Exec(query,
@@ -63,6 +64,7 @@ func (r *RecipeRepository) Create(req models.CreateRecipeRequest) (*models.Recip
 		string(stepsJSON),
 		string(linksJSON),
 		req.OvenTemperature,
+		req.OvenMode,
 		req.ThumbX,
 		req.ThumbY,
 		req.ThumbZoom,
@@ -82,7 +84,7 @@ func (r *RecipeRepository) Create(req models.CreateRecipeRequest) (*models.Recip
 
 // FindAll retrieves all recipes with optional filtering
 func (r *RecipeRepository) FindAll(category, searchQuery string) ([]models.Recipe, error) {
-	query := `SELECT id, title, description, categories, ingredients, steps, links, oven_temperature, image_url, thumb_x, thumb_y, thumb_zoom, created_at, updated_at FROM recipes WHERE 1=1`
+	query := `SELECT id, title, description, categories, ingredients, steps, links, oven_temperature, oven_mode, image_url, thumb_x, thumb_y, thumb_zoom, created_at, updated_at FROM recipes WHERE 1=1`
 	args := []interface{}{}
 
 	// Filter by category if provided
@@ -126,7 +128,7 @@ func (r *RecipeRepository) FindAll(category, searchQuery string) ([]models.Recip
 
 // FindByID retrieves a single recipe by ID
 func (r *RecipeRepository) FindByID(id int64) (*models.Recipe, error) {
-	query := `SELECT id, title, description, categories, ingredients, steps, links, oven_temperature, image_url, thumb_x, thumb_y, thumb_zoom, created_at, updated_at FROM recipes WHERE id = ?`
+	query := `SELECT id, title, description, categories, ingredients, steps, links, oven_temperature, oven_mode, image_url, thumb_x, thumb_y, thumb_zoom, created_at, updated_at FROM recipes WHERE id = ?`
 
 	var dbr dbRecipe
 	if err := r.db.Get(&dbr, query, id); err != nil {
@@ -154,7 +156,7 @@ func (r *RecipeRepository) Update(id int64, req models.UpdateRecipeRequest) (*mo
 
 	query := `
 		UPDATE recipes
-		SET title = ?, description = ?, categories = ?, ingredients = ?, steps = ?, links = ?, oven_temperature = ?, thumb_x = ?, thumb_y = ?, thumb_zoom = ?
+		SET title = ?, description = ?, categories = ?, ingredients = ?, steps = ?, links = ?, oven_temperature = ?, oven_mode = ?, thumb_x = ?, thumb_y = ?, thumb_zoom = ?
 		WHERE id = ?
 	`
 
@@ -166,6 +168,7 @@ func (r *RecipeRepository) Update(id int64, req models.UpdateRecipeRequest) (*mo
 		string(stepsJSON),
 		string(linksJSON),
 		req.OvenTemperature,
+		req.OvenMode,
 		req.ThumbX,
 		req.ThumbY,
 		req.ThumbZoom,
@@ -254,6 +257,7 @@ func (r *RecipeRepository) dbRecipeToModel(dbr dbRecipe) (*models.Recipe, error)
 		Title:           dbr.Title,
 		Description:     dbr.Description,
 		OvenTemperature: dbr.OvenTemperature,
+		OvenMode:        dbr.OvenMode,
 		ImageURL:        dbr.ImageURL,
 		ThumbX:          dbr.ThumbX,
 		ThumbY:          dbr.ThumbY,

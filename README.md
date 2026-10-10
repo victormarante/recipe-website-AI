@@ -8,7 +8,7 @@ Marellis is a family recipe website for storing, browsing, and editing recipes. 
 - Recipe create, read, update, and delete
 - Category browsing and filtering
 - Text search using SQL `LIKE` over recipe fields
-- Optional oven temperature and external/recipe links
+- Optional oven temperature (with fan/conventional mode) and external/recipe links
 - Optional recipe image upload/delete through Cloudflare R2-compatible storage
 - Static frontend suitable for GitHub Pages
 - Backend deployment on Fly.io with SQLite on a mounted volume

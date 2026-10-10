@@ -117,6 +117,10 @@
             <input type="number" id="form-oven-temp" placeholder="°C" min="0" max="500" />
             <button type="button" class="btn btn-ghost" id="btn-convert-temp">from °F</button>
           </div>
+          <div class="oven-mode-row" role="radiogroup" aria-label="Oven mode">
+            <label class="radio-option"><input type="radio" name="form-oven-mode" value="fan" /><span>Fan oven</span></label>
+            <label class="radio-option"><input type="radio" name="form-oven-mode" value="conventional" /><span>Conventional (top and bottom heat)</span></label>
+          </div>
 
           <label for="form-categories">Categories <span class="required">*</span> <small>(comma-separated)</small></label>
           <input type="text" id="form-categories" placeholder="e.g. Breakfast, Vegetarian" required />

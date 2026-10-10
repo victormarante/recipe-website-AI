@@ -773,6 +773,22 @@ header h1 .md-icon { width: 1.6rem; height: 1.6rem; }
   box-shadow: 0 0 0 3px rgba(124,58,237,.15);
 }
 
+.oven-mode-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .25rem 1.25rem;
+  margin-bottom: .5rem;
+}
+#recipe-form .radio-option {
+  display: flex;
+  align-items: center;
+  gap: .4rem;
+  margin: 0;
+  font-weight: 400;
+  cursor: pointer;
+}
+.radio-option input[type="radio"] { accent-color: var(--clr-primary); }
+
 /* ── Footer ───────────────────────────────────────── */
 footer {
   text-align: center;
