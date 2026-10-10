@@ -8,6 +8,7 @@ type Recipe struct {
 	Title           string    `json:"title" db:"title" validate:"required"`
 	Description     string    `json:"description" db:"description"`
 	Categories      []string  `json:"categories" db:"categories" validate:"required,min=1"`
+	Tags            []string  `json:"tags" db:"tags"`
 	Ingredients     []string  `json:"ingredients" db:"ingredients" validate:"required,min=1"`
 	Steps           []string  `json:"steps" db:"steps" validate:"required,min=1"`
 	Links           []Link    `json:"links" db:"links"`
@@ -34,6 +35,7 @@ type CreateRecipeRequest struct {
 	Title           string   `json:"title" validate:"required"`
 	Description     string   `json:"description"`
 	Categories      []string `json:"categories" validate:"required,min=1"`
+	Tags            []string `json:"tags"`
 	Ingredients     []string `json:"ingredients" validate:"required,min=1"`
 	Steps           []string `json:"steps" validate:"required,min=1"`
 	Links           []Link   `json:"links"`
@@ -53,6 +55,7 @@ type UpdateRecipeRequest struct {
 	Title           string   `json:"title" validate:"required"`
 	Description     string   `json:"description"`
 	Categories      []string `json:"categories" validate:"required,min=1"`
+	Tags            []string `json:"tags"`
 	Ingredients     []string `json:"ingredients" validate:"required,min=1"`
 	Steps           []string `json:"steps" validate:"required,min=1"`
 	Links           []Link   `json:"links"`

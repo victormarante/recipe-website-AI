@@ -30,6 +30,7 @@ type dbRecipe struct {
 	Title           string   `db:"title"`
 	Description     string   `db:"description"`
 	Categories      string   `db:"categories"`
+	Tags            string   `db:"tags"`
 	Ingredients     string   `db:"ingredients"`
 	Steps           string   `db:"steps"`
 	Links           string   `db:"links"`
@@ -47,19 +48,21 @@ type dbRecipe struct {
 func (r *RecipeRepository) Create(req models.CreateRecipeRequest) (*models.Recipe, error) {
 	// Marshal arrays to JSON
 	categoriesJSON, _ := json.Marshal(req.Categories)
+	tagsJSON, _ := json.Marshal(nonNil(req.Tags))
 	ingredientsJSON, _ := json.Marshal(req.Ingredients)
 	stepsJSON, _ := json.Marshal(req.Steps)
 	linksJSON, _ := json.Marshal(req.Links)
 
 	query := `
-		INSERT INTO recipes (title, description, categories, ingredients, steps, links, oven_temperature, oven_mode, thumb_x, thumb_y, thumb_zoom)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+		INSERT INTO recipes (title, description, categories, tags, ingredients, steps, links, oven_temperature, oven_mode, thumb_x, thumb_y, thumb_zoom)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 	`
 
 	result, err := r.db.Exec(query,
 		req.Title,
 		req.Description,
 		string(categoriesJSON),
+		string(tagsJSON),
 		string(ingredientsJSON),
 		string(stepsJSON),
 		string(linksJSON),
@@ -84,7 +87,7 @@ func (r *RecipeRepository) Create(req models.CreateRecipeRequest) (*models.Recip
 
 // FindAll retrieves all recipes with optional filtering
 func (r *RecipeRepository) FindAll(category, searchQuery string) ([]models.Recipe, error) {
-	query := `SELECT id, title, description, categories, ingredients, steps, links, oven_temperature, oven_mode, image_url, thumb_x, thumb_y, thumb_zoom, created_at, updated_at FROM recipes WHERE 1=1`
+	query := `SELECT id, title, description, categories, tags, ingredients, steps, links, oven_temperature, oven_mode, image_url, thumb_x, thumb_y, thumb_zoom, created_at, updated_at FROM recipes WHERE 1=1`
 	args := []interface{}{}
 
 	// Filter by category if provided
@@ -128,7 +131,7 @@ func (r *RecipeRepository) FindAll(category, searchQuery string) ([]models.Recip
 
 // FindByID retrieves a single recipe by ID
 func (r *RecipeRepository) FindByID(id int64) (*models.Recipe, error) {
-	query := `SELECT id, title, description, categories, ingredients, steps, links, oven_temperature, oven_mode, image_url, thumb_x, thumb_y, thumb_zoom, created_at, updated_at FROM recipes WHERE id = ?`
+	query := `SELECT id, title, description, categories, tags, ingredients, steps, links, oven_temperature, oven_mode, image_url, thumb_x, thumb_y, thumb_zoom, created_at, updated_at FROM recipes WHERE id = ?`
 
 	var dbr dbRecipe
 	if err := r.db.Get(&dbr, query, id); err != nil {
@@ -150,13 +153,14 @@ func (r *RecipeRepository) Update(id int64, req models.UpdateRecipeRequest) (*mo
 
 	// Marshal arrays to JSON
 	categoriesJSON, _ := json.Marshal(req.Categories)
+	tagsJSON, _ := json.Marshal(nonNil(req.Tags))
 	ingredientsJSON, _ := json.Marshal(req.Ingredients)
 	stepsJSON, _ := json.Marshal(req.Steps)
 	linksJSON, _ := json.Marshal(req.Links)
 
 	query := `
 		UPDATE recipes
-		SET title = ?, description = ?, categories = ?, ingredients = ?, steps = ?, links = ?, oven_temperature = ?, oven_mode = ?, thumb_x = ?, thumb_y = ?, thumb_zoom = ?
+		SET title = ?, description = ?, categories = ?, tags = ?, ingredients = ?, steps = ?, links = ?, oven_temperature = ?, oven_mode = ?, thumb_x = ?, thumb_y = ?, thumb_zoom = ?
 		WHERE id = ?
 	`
 
@@ -164,6 +168,7 @@ func (r *RecipeRepository) Update(id int64, req models.UpdateRecipeRequest) (*mo
 		req.Title,
 		req.Description,
 		string(categoriesJSON),
+		string(tagsJSON),
 		string(ingredientsJSON),
 		string(stepsJSON),
 		string(linksJSON),
@@ -268,6 +273,12 @@ func (r *RecipeRepository) dbRecipeToModel(dbr dbRecipe) (*models.Recipe, error)
 	if err := json.Unmarshal([]byte(dbr.Categories), &recipe.Categories); err != nil {
 		return nil, fmt.Errorf("failed to unmarshal categories: %w", err)
 	}
+	recipe.Tags = []string{}
+	if dbr.Tags != "" && dbr.Tags != "null" {
+		if err := json.Unmarshal([]byte(dbr.Tags), &recipe.Tags); err != nil {
+			return nil, fmt.Errorf("failed to unmarshal tags: %w", err)
+		}
+	}
 	if err := json.Unmarshal([]byte(dbr.Ingredients), &recipe.Ingredients); err != nil {
 		return nil, fmt.Errorf("failed to unmarshal ingredients: %w", err)
 	}
@@ -285,4 +296,12 @@ func (r *RecipeRepository) dbRecipeToModel(dbr dbRecipe) (*models.Recipe, error)
 	}
 
 	return recipe, nil
+}
+
+// nonNil returns an empty slice instead of nil so tags marshal as [] not null.
+func nonNil(s []string) []string {
+	if s == nil {
+		return []string{}
+	}
+	return s
 }

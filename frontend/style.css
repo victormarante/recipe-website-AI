@@ -436,7 +436,6 @@ header h1 .md-icon { width: 1.6rem; height: 1.6rem; }
 }
 
 .recipe-card h3 { font-family: var(--font-heading); font-size: 1.05rem; color: var(--clr-primary); font-weight: 700; }
-.recipe-card p  { font-size: .87rem; color: var(--clr-muted); flex: 1; line-height: 1.5; }
 
 .card-tags {
   display: flex;
@@ -540,6 +539,10 @@ header h1 .md-icon { width: 1.6rem; height: 1.6rem; }
   gap: .3rem;
   margin-bottom: 1rem;
 }
+
+button.tag { border: 0; font-family: var(--font-heading); cursor: pointer; }
+button.tag:hover { background: var(--clr-primary); color: #fff; }
+.detail-tags { margin-top: 1rem; margin-bottom: 0; }
 
 .tag-label {
   font-size: .78rem;
@@ -648,36 +651,15 @@ header h1 .md-icon { width: 1.6rem; height: 1.6rem; }
 }
 .dynamic-item select:focus { border-color: var(--clr-primary); }
 
+/* Detail photo: reuses .recipe-card-thumb (same crop as the list view). */
 .recipe-photo-frame {
-  position: relative;
   display: block;
-  width: 100%;
-  height: 320px;
   padding: 0;
   border: 0;
-  overflow: hidden;
+  width: 100%;
+  margin: 0 0 1rem;
   border-radius: var(--radius);
-  margin-bottom: 1rem;
-  background: var(--clr-primary-lt);
   cursor: zoom-in;
-}
-
-.recipe-photo-bg {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  filter: blur(24px) brightness(.7);
-  transform: scale(1.2);
-}
-
-.recipe-photo {
-  position: relative;
-  display: block;
-  width: 100%;
-  height: 100%;
-  object-fit: contain;
 }
 
 .lightbox-overlay {
@@ -844,7 +826,6 @@ footer {
   .recipe-grid { grid-template-columns: 1fr; }
 
   #recipe-detail { padding: 1.25rem; }
-  .recipe-photo-frame { height: 220px; }
   #recipe-detail h2 { font-size: 1.4rem; }
 
   .modal { padding: 1.5rem; }

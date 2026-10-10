@@ -6,6 +6,7 @@ let state = {
   recipes: [],
   activeCategory: null,
   searchQuery: '',
+  tagFilter: '',
   editingId: null,
   pendingDeleteId: null,
   pendingRemoveImage: false,
@@ -144,6 +145,10 @@ function getFilteredRecipes() {
     );
   }
 
+  if (state.tagFilter) {
+    recipes = recipes.filter(r => (r.tags || []).includes(state.tagFilter));
+  }
+
   return recipes;
 }
 
@@ -158,7 +163,9 @@ function renderRecipeList() {
     recipes.forEach(r => recipeCards.appendChild(buildCard(r)));
   }
 
-  if (state.searchQuery) {
+  if (state.tagFilter) {
+    listHeading.textContent = `${t('Tag')}: #${state.tagFilter}`;
+  } else if (state.searchQuery) {
     listHeading.textContent = `${t('Search')}: "${state.searchQuery}"`;
   } else if (state.activeCategory) {
     listHeading.textContent = categoryLabel(state.activeCategory);
@@ -175,15 +182,12 @@ function buildCard(recipe) {
   const h3 = document.createElement('h3');
   h3.textContent = recipe.title;
 
-  const p = document.createElement('p');
-  p.textContent = recipe.description || '';
-
   const tags = document.createElement('div');
   tags.className = 'card-tags';
-  (recipe.categories || []).forEach(c => {
+  (recipe.tags || []).forEach(tg => {
     const span = document.createElement('span');
-    span.className = 'tag';
-    span.textContent = categoryLabel(c);
+    span.className = 'tag tag-user';
+    span.textContent = `#${tg}`;
     tags.appendChild(span);
   });
 
@@ -219,8 +223,7 @@ function buildCard(recipe) {
   }
 
   card.appendChild(h3);
-  card.appendChild(p);
-  card.appendChild(tags);
+  if (tags.children.length > 0) card.appendChild(tags);
   card.appendChild(actions);
 
   card.addEventListener('click', () => showDetail(recipe.id));
@@ -305,18 +308,13 @@ function renderDetail(id) {
   if (recipe.image_url) {
     const frame = document.createElement('button');
     frame.type = 'button';
-    frame.className = 'recipe-photo-frame';
+    frame.className = 'recipe-card-thumb recipe-photo-frame';
     frame.setAttribute('aria-label', t('View full image'));
-    const bg = document.createElement('img');
-    bg.src = recipe.image_url;
-    bg.alt = '';
-    bg.setAttribute('aria-hidden', 'true');
-    bg.className = 'recipe-photo-bg';
     const img = document.createElement('img');
-    img.src = recipe.image_url;
     img.alt = recipe.title;
-    img.className = 'recipe-photo';
-    frame.appendChild(bg);
+    applyThumbCrop(img, { x: recipe.thumb_x, y: recipe.thumb_y, zoom: recipe.thumb_zoom });
+    setThumbBackdrop(frame, recipe.image_url);
+    img.src = recipe.image_url;
     frame.appendChild(img);
     frame.addEventListener('click', () => openLightbox(recipe.image_url, recipe.title));
     recipeDetail.appendChild(frame);
@@ -371,23 +369,46 @@ function renderDetail(id) {
     recipeDetail.appendChild(linksSection);
   }
 
+  const tagList = recipe.tags || [];
+  if (tagList.length > 0) {
+    const tagsDiv = document.createElement('div');
+    tagsDiv.className = 'detail-tags';
+    tagList.forEach(tg => {
+      const chip = document.createElement('button');
+      chip.type = 'button';
+      chip.className = 'tag tag-user';
+      chip.textContent = `#${tg}`;
+      chip.addEventListener('click', () => searchByTag(tg));
+      tagsDiv.appendChild(chip);
+    });
+    recipeDetail.appendChild(tagsDiv);
+  }
+
   showView('detail');
   return true;
+}
+
+// Tags are an exact-match filter, separate from the free-text search.
+function searchByTag(tag) {
+  go(`#/search?tag=${encodeURIComponent(tag)}`);
+}
+
+function renderSearch(q, tag) {
+  state.activeCategory = null;
+  state.searchQuery = q;
+  state.tagFilter = tag;
+  searchInput.value = q;
+  renderCategories();
+  renderRecipeList();
+  showView('list');
+  closeSidebar();
 }
 
 // ── View switching ────────────────────────────────────────────────────────────
 
 function showView(name) {
-  const catHome       = $('#view-categories-home');
   const recipeBrowser = $('#recipe-browser');
 
-  if (name === 'categories') {
-    catHome.classList.remove('hidden');
-    recipeBrowser.classList.add('hidden');
-    return;
-  }
-
-  catHome.classList.add('hidden');
   recipeBrowser.classList.remove('hidden');
 
   viewList.classList.remove('active');
@@ -411,81 +432,12 @@ function selectCategory(cat) {
 function renderList(cat) {
   state.activeCategory = cat;
   state.searchQuery = '';
+  state.tagFilter = '';
   searchInput.value = '';
   renderCategories();
   renderRecipeList();
   showView('list');
   closeSidebar();
-}
-
-function showCategoriesHome() {
-  go('#/');
-}
-
-function renderHome() {
-  state.activeCategory = null;
-  state.searchQuery = '';
-  searchInput.value = '';
-  renderCategoryCards();
-  showView('categories');
-}
-
-function renderCategoryCards() {
-  const categories = getAllCategories(state.recipes);
-  const grid = $('#category-cards-grid');
-  const msg  = $('#no-categories-msg');
-  grid.innerHTML = '';
-
-  if (categories.length === 0) {
-    msg.classList.remove('hidden');
-    return;
-  }
-  msg.classList.add('hidden');
-
-  categories.forEach(cat => {
-    const catRecipes = state.recipes.filter(r =>
-      (r.categories || []).map(c => c.toLowerCase().trim()).includes(cat));
-
-    const card = document.createElement('div');
-    card.className = 'category-home-card';
-    card.addEventListener('click', () => selectCategory(cat));
-
-    const emoji = document.createElement('div');
-    emoji.className = 'cat-emoji';
-    emoji.textContent = getCategoryEmoji(cat);
-
-    const h3 = document.createElement('h3');
-    h3.textContent = categoryLabel(cat);
-
-    const count = document.createElement('p');
-    count.className = 'cat-count';
-    count.textContent = `${catRecipes.length} ${t(catRecipes.length === 1 ? 'recipe' : 'recipes')}`;
-
-    const preview = document.createElement('ul');
-    preview.className = 'cat-preview';
-    catRecipes.slice(0, 3).forEach(r => {
-      const li = document.createElement('li');
-      li.textContent = r.title;
-      preview.appendChild(li);
-    });
-
-    card.appendChild(emoji);
-    card.appendChild(h3);
-    card.appendChild(count);
-    card.appendChild(preview);
-    grid.appendChild(card);
-  });
-}
-
-function getCategoryEmoji(cat) {
-  const map = {
-    breakfast: '🍳', lunch: '🥙', dinner: '🍽', vegetarian: '🥦',
-    vegan: '🌱', dessert: '🍰', snack: '🍿', soup: '🍲',
-    pasta: '🍝', pizza: '🍕', salad: '🥗', meat: '🥩',
-    fish: '🐟', seafood: '🦐', baking: '🥖', bread: '🍞',
-    drinks: '🥤', cocktail: '🍹'
-  };
-  return map[cat.toLowerCase()] || '🍴';
 }
 
 // ── Modal: Add / Edit ─────────────────────────────────────────────────────────
@@ -585,7 +537,7 @@ function openEditModal(id) {
   $('#form-oven-temp').value = recipe.oven_temperature ?? '';
   $$('input[name="form-oven-mode"]').forEach(input => { input.checked = input.value === recipe.oven_mode; });
   $('#form-categories').value = (recipe.categories || []).join(', ');
-  $('#form-tags').value = '';
+  $('#form-tags').value = (recipe.tags || []).join(', ');
 
   clearDynamicList('ingredients-list');
   (recipe.ingredients || []).forEach(ing => addIngredientRow(ing));
@@ -837,6 +789,9 @@ async function handleFormSubmit(e) {
     .split(',').map(c => c.trim().toLowerCase()).filter(Boolean);
   if (categories.length === 0) { showFormError(t('Please enter at least one category.')); $('#form-categories').focus(); return; }
 
+  const tags = $('#form-tags').value
+    .split(',').map(c => c.trim().toLowerCase().replace(/^#/, '')).filter(Boolean);
+
   const ingredients = collectDynamicValues('ingredients-list');
   if (ingredients.length === 0) { showFormError(t('Please add at least one ingredient.')); return; }
 
@@ -853,6 +808,7 @@ async function handleFormSubmit(e) {
     title,
     description: $('#form-description').value.trim(),
     categories,
+    tags,
     ingredients,
     steps,
     links,
@@ -1003,7 +959,7 @@ async function handleLogin(e) {
 // ── Event wiring ──────────────────────────────────────────────────────────────
 
 function wireEvents() {
-  $('#logo').addEventListener('click', showCategoriesHome);
+  $('#logo').addEventListener('click', () => go('#/recipes'));
 
   $('#btn-add-recipe').addEventListener('click', openAddModal);
   $('#btn-cancel').addEventListener('click', closeModal);
@@ -1063,23 +1019,24 @@ function wireEvents() {
   });
 
   searchInput.addEventListener('input', () => {
-    state.searchQuery = searchInput.value.trim();
-    if (state.searchQuery) {
-      state.activeCategory = null;
-      renderCategories();
-      renderRecipeList();
-      showView('list');
+    const q = searchInput.value.trim();
+    if (q) {
+      // replaceState: keeps the URL shareable without a history entry per keystroke
+      history.replaceState(null, '', `#/search?q=${encodeURIComponent(q)}`);
+      renderSearch(q, '');
     } else {
-      showCategoriesHome();
+      go('#/recipes');
     }
   });
 }
 
 // ── Navigation (hash routes) ──────────────────────────────────────────────────
-//   #/                      categories home
+//   #/                      all recipes (same as #/recipes)
 //   #/recipes               all recipes
 //   #/categories/<name>     recipes in a category
 //   #/recipes/<id>          recipe detail
+//   #/search?q=<text>       free-text search
+//   #/search?tag=<tag>      recipes with an exact tag
 
 function go(hash) {
   if (location.hash === hash) route();
@@ -1089,11 +1046,16 @@ function go(hash) {
 function route() {
   closeSidebar();
   state.searchQuery = '';
+  state.tagFilter = '';
   searchInput.value = '';
 
-  const parts = location.hash.replace(/^#\/?/, '').split('/').filter(Boolean);
+  const [path, query = ''] = location.hash.replace(/^#\/?/, '').split('?');
+  const parts = path.split('/').filter(Boolean);
 
-  if (parts[0] === 'recipes' && parts.length === 1) {
+  if (parts[0] === 'search') {
+    const params = new URLSearchParams(query);
+    renderSearch((params.get('q') || '').trim(), (params.get('tag') || '').trim().toLowerCase());
+  } else if (parts[0] === 'recipes' && parts.length === 1) {
     renderList(null);
   } else if (parts[0] === 'recipes') {
     if (!renderDetail(parseInt(parts[1], 10))) go('#/recipes');
@@ -1102,7 +1064,7 @@ function route() {
     try { cat = decodeURIComponent(cat); } catch { /* keep raw */ }
     renderList(cat.toLowerCase().trim());
   } else {
-    renderHome();
+    renderList(null);
   }
 }
 
@@ -1117,7 +1079,6 @@ async function loadAndRender() {
     state.recipes = [];
   }
   renderCategories();
-  renderCategoryCards();
   renderRecipeList();
   route();
 }

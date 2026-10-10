@@ -19,6 +19,7 @@ const TRANSLATIONS = {
       'Add Recipe': 'Lägg till recept',
       'Search recipes': 'Sök recept',
       'Search': 'Sök',
+      'Tag': 'Tagg',
       'No categories yet. Add a recipe to get started!': 'Inga kategorier än. Lägg till ett recept för att komma igång!',
       'Categories': 'Kategorier',
       'All recipes': 'Alla recept',
