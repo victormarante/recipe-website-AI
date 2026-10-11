@@ -26,22 +26,24 @@ func NewRecipeRepository(db *sqlx.DB) *RecipeRepository {
 
 // dbRecipe represents a recipe as stored in the database (with JSON fields as strings)
 type dbRecipe struct {
-	ID              int64    `db:"id"`
-	Title           string   `db:"title"`
-	Description     string   `db:"description"`
-	Categories      string   `db:"categories"`
-	Tags            string   `db:"tags"`
-	Ingredients     string   `db:"ingredients"`
-	Steps           string   `db:"steps"`
-	Links           string   `db:"links"`
-	OvenTemperature *int     `db:"oven_temperature"`
-	OvenMode        *string  `db:"oven_mode"`
-	ImageURL        *string  `db:"image_url"`
-	ThumbX          *float64 `db:"thumb_x"`
-	ThumbY          *float64 `db:"thumb_y"`
-	ThumbZoom       *float64 `db:"thumb_zoom"`
-	CreatedAt       string   `db:"created_at"`
-	UpdatedAt       string   `db:"updated_at"`
+	ID               int64    `db:"id"`
+	Title            string   `db:"title"`
+	Description      string   `db:"description"`
+	Categories       string   `db:"categories"`
+	Tags             string   `db:"tags"`
+	Ingredients      string   `db:"ingredients"`
+	Steps            string   `db:"steps"`
+	Links            string   `db:"links"`
+	OvenTemperature  *int     `db:"oven_temperature"`
+	OvenMode         *string  `db:"oven_mode"`
+	ImageURL         *string  `db:"image_url"`
+	ImageThumbURL    *string  `db:"image_thumb_url"`
+	ImageOriginalURL *string  `db:"image_original_url"`
+	ThumbX           *float64 `db:"thumb_x"`
+	ThumbY           *float64 `db:"thumb_y"`
+	ThumbZoom        *float64 `db:"thumb_zoom"`
+	CreatedAt        string   `db:"created_at"`
+	UpdatedAt        string   `db:"updated_at"`
 }
 
 // Create inserts a new recipe into the database
@@ -87,7 +89,7 @@ func (r *RecipeRepository) Create(req models.CreateRecipeRequest) (*models.Recip
 
 // FindAll retrieves all recipes with optional filtering
 func (r *RecipeRepository) FindAll(category, searchQuery string) ([]models.Recipe, error) {
-	query := `SELECT id, title, description, categories, tags, ingredients, steps, links, oven_temperature, oven_mode, image_url, thumb_x, thumb_y, thumb_zoom, created_at, updated_at FROM recipes WHERE 1=1`
+	query := `SELECT id, title, description, categories, tags, ingredients, steps, links, oven_temperature, oven_mode, image_url, image_thumb_url, image_original_url, thumb_x, thumb_y, thumb_zoom, created_at, updated_at FROM recipes WHERE 1=1`
 	args := []interface{}{}
 
 	// Filter by category if provided
@@ -131,7 +133,7 @@ func (r *RecipeRepository) FindAll(category, searchQuery string) ([]models.Recip
 
 // FindByID retrieves a single recipe by ID
 func (r *RecipeRepository) FindByID(id int64) (*models.Recipe, error) {
-	query := `SELECT id, title, description, categories, tags, ingredients, steps, links, oven_temperature, oven_mode, image_url, thumb_x, thumb_y, thumb_zoom, created_at, updated_at FROM recipes WHERE id = ?`
+	query := `SELECT id, title, description, categories, tags, ingredients, steps, links, oven_temperature, oven_mode, image_url, image_thumb_url, image_original_url, thumb_x, thumb_y, thumb_zoom, created_at, updated_at FROM recipes WHERE id = ?`
 
 	var dbr dbRecipe
 	if err := r.db.Get(&dbr, query, id); err != nil {
@@ -239,11 +241,21 @@ func (r *RecipeRepository) GetAllCategories() ([]string, error) {
 	return categories, nil
 }
 
-// UpdateImageURL sets or clears the image_url for a recipe.
+// UpdateImageURL sets or clears the image_url for a recipe. It also clears the
+// thumbnail and original URLs, which only make sense next to a framed image.
 func (r *RecipeRepository) UpdateImageURL(id int64, imageURL *string) error {
-	result, err := r.db.Exec(`UPDATE recipes SET image_url = ? WHERE id = ?`, imageURL, id)
+	return r.UpdateImages(id, imageURL, nil, nil)
+}
+
+// UpdateImages sets or clears the image_url, image_thumb_url and
+// image_original_url columns for a recipe.
+func (r *RecipeRepository) UpdateImages(id int64, imageURL, thumbURL, originalURL *string) error {
+	result, err := r.db.Exec(
+		`UPDATE recipes SET image_url = ?, image_thumb_url = ?, image_original_url = ? WHERE id = ?`,
+		imageURL, thumbURL, originalURL, id,
+	)
 	if err != nil {
-		return fmt.Errorf("failed to update image_url: %w", err)
+		return fmt.Errorf("failed to update images: %w", err)
 	}
 	rowsAffected, err := result.RowsAffected()
 	if err != nil {
@@ -258,15 +270,17 @@ func (r *RecipeRepository) UpdateImageURL(id int64, imageURL *string) error {
 // dbRecipeToModel converts a database recipe to a model recipe
 func (r *RecipeRepository) dbRecipeToModel(dbr dbRecipe) (*models.Recipe, error) {
 	recipe := &models.Recipe{
-		ID:              dbr.ID,
-		Title:           dbr.Title,
-		Description:     dbr.Description,
-		OvenTemperature: dbr.OvenTemperature,
-		OvenMode:        dbr.OvenMode,
-		ImageURL:        dbr.ImageURL,
-		ThumbX:          dbr.ThumbX,
-		ThumbY:          dbr.ThumbY,
-		ThumbZoom:       dbr.ThumbZoom,
+		ID:               dbr.ID,
+		Title:            dbr.Title,
+		Description:      dbr.Description,
+		OvenTemperature:  dbr.OvenTemperature,
+		OvenMode:         dbr.OvenMode,
+		ImageURL:         dbr.ImageURL,
+		ImageThumbURL:    dbr.ImageThumbURL,
+		ImageOriginalURL: dbr.ImageOriginalURL,
+		ThumbX:           dbr.ThumbX,
+		ThumbY:           dbr.ThumbY,
+		ThumbZoom:        dbr.ThumbZoom,
 	}
 
 	// Unmarshal JSON fields

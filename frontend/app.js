@@ -11,6 +11,7 @@ let state = {
   pendingDeleteId: null,
   pendingRemoveImage: false,
   thumb: { x: 50, y: 50, zoom: 1 },
+  thumbLocked: false,
 };
 
 // Stored oven_mode values (English) mapped to their UI label keys.
@@ -47,7 +48,8 @@ const THUMB_ASPECT = 2;
 // Lays an absolutely positioned <img> out inside a THUMB_ASPECT frame.
 // x/y (0-100) pick which part of the overflow is shown (50 = centred, like
 // object-position); zoom scales the cover-fitted image (1 = just covers the
-// frame, below 1 = whole image visible, with the frame backdrop around it). Everything is a
+// frame, below 1 = whole image visible, with the frame backdrop around it, 'fit' =
+// the lowest zoom that shows the whole image). Everything is a
 // percentage of the frame, so it needs no resize handling. Defaults are a
 // centred cover fit, so uncropped recipes look as they did before.
 function applyThumbCrop(img, crop) {
@@ -56,7 +58,8 @@ function applyThumbCrop(img, crop) {
   const zoom = crop?.zoom ?? 1;
   const apply = () => {
     const ratio = img.naturalWidth / img.naturalHeight;
-    const wPct = zoom * Math.max(1, ratio / THUMB_ASPECT) * 100;
+    const z = zoom === 'fit' ? minThumbZoom(img) : zoom;
+    const wPct = z * Math.max(1, ratio / THUMB_ASPECT) * 100;
     const hPct = (wPct * THUMB_ASPECT) / ratio;
     img.style.width = `${wPct}%`;
     img.style.height = `${hPct}%`;
@@ -77,6 +80,83 @@ function setThumbBackdrop(frame, src) {
 function minThumbZoom(img) {
   const ratio = img.naturalWidth / img.naturalHeight;
   return Math.max(0.05, Math.ceil(Math.min(ratio / THUMB_ASPECT, THUMB_ASPECT / ratio) * 100) / 100);
+}
+
+// Photos uploaded through bakeImage() are already cropped, so they only need the
+// whole-image fit (the frame backdrop fills any gap). Older recipes still carry
+// their original photo plus a crop that is applied here in the browser.
+function recipeCrop(recipe) {
+  if (recipe.image_original_url) return { x: 50, y: 50, zoom: 'fit' };
+  return { x: recipe.thumb_x, y: recipe.thumb_y, zoom: recipe.thumb_zoom };
+}
+
+// ── Photo upload: crop in the browser ─────────────────────────────────────────
+
+const CARD_IMAGE_MAX_EDGE = 800;    // long side of the small list-card copy
+const FRAMED_IMAGE_MAX_EDGE = 8192; // keeps the canvas within browser limits
+
+// The part of a w x h image that applyThumbCrop shows inside the frame, in
+// source pixels. Mirrors that function's layout maths.
+function visibleRegion(w, h, crop) {
+  const ratio = w / h;
+  const wPct = crop.zoom * Math.max(1, ratio / THUMB_ASPECT) * 100;
+  const hPct = (wPct * THUMB_ASPECT) / ratio;
+  const left = -(wPct - 100) * crop.x / 100;
+  const top = -(hPct - 100) * crop.y / 100;
+  const x0 = Math.max(0, -left / wPct);
+  const x1 = Math.min(1, (100 - left) / wPct);
+  const y0 = Math.max(0, -top / hPct);
+  const y1 = Math.min(1, (100 - top) / hPct);
+  return { sx: x0 * w, sy: y0 * h, sw: (x1 - x0) * w, sh: (y1 - y0) * h };
+}
+
+function canvasToBlob(canvas, quality) {
+  return new Promise((resolve, reject) => {
+    canvas.toBlob(blob => (blob ? resolve(blob) : reject(new Error('Could not encode image'))), 'image/jpeg', quality);
+  });
+}
+
+// Crops `file` to what the thumbnail editor shows and returns the files to
+// upload: the cropped photo, a small copy for list cards, and the untouched
+// original. If the browser can't decode or encode the image, the plain file is
+// uploaded instead and the crop is applied on display, as it was before.
+async function bakeImage(file, crop) {
+  const url = URL.createObjectURL(file);
+  try {
+    const img = new Image();
+    img.src = url;
+    await img.decode();
+
+    const { sx, sy, sw, sh } = visibleRegion(img.naturalWidth, img.naturalHeight, crop);
+    const scale = Math.min(1, FRAMED_IMAGE_MAX_EDGE / Math.max(sw, sh));
+    const framed = document.createElement('canvas');
+    framed.width = Math.max(1, Math.round(sw * scale));
+    framed.height = Math.max(1, Math.round(sh * scale));
+    const ctx = framed.getContext('2d');
+    ctx.imageSmoothingQuality = 'high';
+    ctx.fillStyle = '#fff'; // PNGs with transparency would otherwise turn black
+    ctx.fillRect(0, 0, framed.width, framed.height);
+    ctx.drawImage(img, sx, sy, sw, sh, 0, 0, framed.width, framed.height);
+
+    const cardScale = Math.min(1, CARD_IMAGE_MAX_EDGE / Math.max(framed.width, framed.height));
+    const card = document.createElement('canvas');
+    card.width = Math.max(1, Math.round(framed.width * cardScale));
+    card.height = Math.max(1, Math.round(framed.height * cardScale));
+    const cardCtx = card.getContext('2d');
+    cardCtx.imageSmoothingQuality = 'high';
+    cardCtx.drawImage(framed, 0, 0, card.width, card.height);
+
+    return {
+      image: await canvasToBlob(framed, 0.92),
+      thumb: await canvasToBlob(card, 0.82),
+      original: file,
+    };
+  } catch (err) {
+    console.warn('Could not crop photo in the browser, uploading it as-is:', err);
+    return { image: file };
+  } finally {
+    URL.revokeObjectURL(url);
+  }
 }
 
 // ── Icon helper ───────────────────────────────────────────────────────────────
@@ -215,9 +295,10 @@ function buildCard(recipe) {
     const thumb = document.createElement('img');
     thumb.alt = recipe.title;
     thumb.loading = 'lazy';
-    applyThumbCrop(thumb, { x: recipe.thumb_x, y: recipe.thumb_y, zoom: recipe.thumb_zoom });
-    setThumbBackdrop(thumbFrame, recipe.image_url);
-    thumb.src = recipe.image_url;
+    const thumbSrc = recipe.image_thumb_url || recipe.image_url;
+    applyThumbCrop(thumb, recipeCrop(recipe));
+    setThumbBackdrop(thumbFrame, thumbSrc);
+    thumb.src = thumbSrc;
     thumbFrame.appendChild(thumb);
     card.appendChild(thumbFrame);
   }
@@ -312,7 +393,7 @@ function renderDetail(id) {
     frame.setAttribute('aria-label', t('View full image'));
     const img = document.createElement('img');
     img.alt = recipe.title;
-    applyThumbCrop(img, { x: recipe.thumb_x, y: recipe.thumb_y, zoom: recipe.thumb_zoom });
+    applyThumbCrop(img, recipeCrop(recipe));
     setThumbBackdrop(frame, recipe.image_url);
     img.src = recipe.image_url;
     frame.appendChild(img);
@@ -442,19 +523,26 @@ function renderList(cat) {
 
 // ── Modal: Add / Edit ─────────────────────────────────────────────────────────
 
-function showThumbEditor(src, crop) {
+// With `locked`, `src` is a photo that was already cropped when uploaded: it is
+// shown as stored and can't be re-framed, and `crop` (the framing of the
+// original) is kept so saving the recipe doesn't overwrite it.
+function showThumbEditor(src, crop, locked = false) {
   state.thumb = { x: crop?.x ?? 50, y: crop?.y ?? 50, zoom: crop?.zoom ?? 1 };
+  state.thumbLocked = locked;
+  $('#form-image-preview').classList.toggle('thumb-locked', locked);
   const img = $('#form-image-preview-img');
   const zoom = $('#thumb-zoom');
   zoom.value = state.thumb.zoom;
-  applyThumbCrop(img, state.thumb);
+  applyThumbCrop(img, locked ? { x: 50, y: 50, zoom: 'fit' } : state.thumb);
   setThumbBackdrop($('#thumb-box'), src);
-  img.addEventListener('load', () => {
-    zoom.min = Math.min(1, minThumbZoom(img));
-    state.thumb.zoom = Math.max(state.thumb.zoom, parseFloat(zoom.min));
-    zoom.value = state.thumb.zoom;
-    applyThumbCrop(img, state.thumb);
-  }, { once: true });
+  if (!locked) {
+    img.addEventListener('load', () => {
+      zoom.min = Math.min(1, minThumbZoom(img));
+      state.thumb.zoom = Math.max(state.thumb.zoom, parseFloat(zoom.min));
+      zoom.value = state.thumb.zoom;
+      applyThumbCrop(img, state.thumb);
+    }, { once: true });
+  }
   img.src = src;
   $('#form-image-preview').classList.remove('hidden');
 }
@@ -470,6 +558,7 @@ function initThumbEditor() {
   let drag = null;
 
   box.addEventListener('pointerdown', e => {
+    if (state.thumbLocked) return;
     drag = { px: e.clientX, py: e.clientY };
     box.setPointerCapture(e.pointerId);
     box.classList.add('dragging');
@@ -551,7 +640,7 @@ function openEditModal(id) {
   (recipe.links || []).forEach(link => addLinkRow(link));
 
   if (recipe.image_url) {
-    showThumbEditor(recipe.image_url, { x: recipe.thumb_x, y: recipe.thumb_y, zoom: recipe.thumb_zoom });
+    showThumbEditor(recipe.image_url, { x: recipe.thumb_x, y: recipe.thumb_y, zoom: recipe.thumb_zoom }, !!recipe.image_original_url);
   } else {
     hideThumbEditor();
   }
@@ -818,8 +907,12 @@ async function handleFormSubmit(e) {
   };
 
   const editingId = state.editingId;
+  const imageFile = $('#form-image').files[0];
 
   try {
+    // Crop the photo in the browser before anything is saved.
+    const photo = imageFile ? await bakeImage(imageFile, state.thumb) : null;
+
     let saved;
     if (editingId) {
       saved = await window.API.recipes.update(editingId, recipeData);
@@ -827,9 +920,8 @@ async function handleFormSubmit(e) {
       saved = await window.API.recipes.create(recipeData);
     }
 
-    const imageFile = $('#form-image').files[0];
-    if (imageFile) {
-      await window.API.recipes.uploadImage(saved.id, imageFile);
+    if (photo) {
+      await window.API.recipes.uploadImage(saved.id, photo);
     } else if (state.pendingRemoveImage) {
       await window.API.recipes.deleteImage(saved.id);
     }
@@ -1045,6 +1137,7 @@ function go(hash) {
 
 function route() {
   closeSidebar();
+  window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
   state.searchQuery = '';
   state.tagFilter = '';
   searchInput.value = '';

@@ -138,10 +138,11 @@
             <svg class="md-icon" aria-hidden="true"><use href="#icon-add_link"/></svg> Add Link
           </button>
 
-          <label for="form-image">Photo <small>(optional, max 5 MB)</small></label>
+          <label for="form-image">Photo <small>(optional, max 15 MB)</small></label>
           <input type="file" id="form-image" accept="image/*" />
           <div id="form-image-preview" class="form-image-preview hidden">
             <p class="thumb-hint">Drag the photo to choose how it appears in the recipe list</p>
+            <p class="thumb-hint thumb-hint-locked">The photo is already cropped. Choose a new photo above to change the framing.</p>
             <div id="thumb-box" class="thumb-box">
               <img id="form-image-preview-img" src="" alt="Current photo" draggable="false" />
             </div>

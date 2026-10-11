@@ -688,6 +688,12 @@ button.tag:hover { background: var(--clr-primary); color: #fff; }
   margin-bottom: .5rem;
 }
 .thumb-hint { font-size: .85rem; color: var(--clr-muted); margin: 0; }
+.thumb-hint-locked,
+.thumb-locked .thumb-hint:not(.thumb-hint-locked),
+.thumb-locked .thumb-zoom-label,
+.thumb-locked #thumb-zoom { display: none; }
+.thumb-locked .thumb-hint-locked { display: block; }
+.thumb-locked .thumb-box { cursor: default; }
 .thumb-box {
   position: relative;
   width: 100%;

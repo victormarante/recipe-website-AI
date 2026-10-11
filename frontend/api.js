@@ -123,10 +123,14 @@ const RecipeAPI = {
     return request(`/recipes/${id}`, { method: 'DELETE' });
   },
 
-  async uploadImage(id, file) {
+  // `files` is a File, or { image, thumb, original } (thumb and original go together).
+  async uploadImage(id, files) {
     const url = `${API_BASE_URL}${API_VERSION}/recipes/${id}/image`;
+    const parts = files instanceof Blob ? { image: files } : files;
     const form = new FormData();
-    form.append('image', file);
+    form.append('image', parts.image, 'image.jpg');
+    if (parts.thumb) form.append('thumb', parts.thumb, 'thumb.jpg');
+    if (parts.original) form.append('original', parts.original, parts.original.name || 'original');
     const response = await fetch(url, {
       method: 'POST',
       headers: authHeaders(),

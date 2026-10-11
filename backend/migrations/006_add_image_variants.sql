@@ -1,0 +1,2 @@
+ALTER TABLE recipes ADD COLUMN image_thumb_url TEXT DEFAULT NULL;
+ALTER TABLE recipes ADD COLUMN image_original_url TEXT DEFAULT NULL;

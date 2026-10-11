@@ -4,22 +4,24 @@ import "time"
 
 // Recipe represents a recipe in the database
 type Recipe struct {
-	ID              int64     `json:"id" db:"id"`
-	Title           string    `json:"title" db:"title" validate:"required"`
-	Description     string    `json:"description" db:"description"`
-	Categories      []string  `json:"categories" db:"categories" validate:"required,min=1"`
-	Tags            []string  `json:"tags" db:"tags"`
-	Ingredients     []string  `json:"ingredients" db:"ingredients" validate:"required,min=1"`
-	Steps           []string  `json:"steps" db:"steps" validate:"required,min=1"`
-	Links           []Link    `json:"links" db:"links"`
-	OvenTemperature *int      `json:"oven_temperature" db:"oven_temperature"`
-	OvenMode        *string   `json:"oven_mode" db:"oven_mode"`
-	ImageURL        *string   `json:"image_url" db:"image_url"`
-	ThumbX          *float64  `json:"thumb_x" db:"thumb_x"`
-	ThumbY          *float64  `json:"thumb_y" db:"thumb_y"`
-	ThumbZoom       *float64  `json:"thumb_zoom" db:"thumb_zoom"`
-	CreatedAt       time.Time `json:"created_at" db:"created_at"`
-	UpdatedAt       time.Time `json:"updated_at" db:"updated_at"`
+	ID               int64     `json:"id" db:"id"`
+	Title            string    `json:"title" db:"title" validate:"required"`
+	Description      string    `json:"description" db:"description"`
+	Categories       []string  `json:"categories" db:"categories" validate:"required,min=1"`
+	Tags             []string  `json:"tags" db:"tags"`
+	Ingredients      []string  `json:"ingredients" db:"ingredients" validate:"required,min=1"`
+	Steps            []string  `json:"steps" db:"steps" validate:"required,min=1"`
+	Links            []Link    `json:"links" db:"links"`
+	OvenTemperature  *int      `json:"oven_temperature" db:"oven_temperature"`
+	OvenMode         *string   `json:"oven_mode" db:"oven_mode"`
+	ImageURL         *string   `json:"image_url" db:"image_url"`
+	ImageThumbURL    *string   `json:"image_thumb_url" db:"image_thumb_url"`
+	ImageOriginalURL *string   `json:"image_original_url" db:"image_original_url"`
+	ThumbX           *float64  `json:"thumb_x" db:"thumb_x"`
+	ThumbY           *float64  `json:"thumb_y" db:"thumb_y"`
+	ThumbZoom        *float64  `json:"thumb_zoom" db:"thumb_zoom"`
+	CreatedAt        time.Time `json:"created_at" db:"created_at"`
+	UpdatedAt        time.Time `json:"updated_at" db:"updated_at"`
 }
 
 // Link represents an external or recipe link

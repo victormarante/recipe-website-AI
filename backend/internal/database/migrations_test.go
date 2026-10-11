@@ -23,13 +23,15 @@ func TestRunMigrationsFreshDatabase(t *testing.T) {
 	assertColumnExists(t, db, "recipes", "thumb_y")
 	assertColumnExists(t, db, "recipes", "thumb_zoom")
 	assertColumnExists(t, db, "recipes", "tags")
+	assertColumnExists(t, db, "recipes", "image_thumb_url")
+	assertColumnExists(t, db, "recipes", "image_original_url")
 
 	var count int
 	if err := db.Get(&count, `SELECT COUNT(*) FROM schema_migrations`); err != nil {
 		t.Fatalf("count migrations: %v", err)
 	}
-	if count != 5 {
-		t.Fatalf("expected 5 migrations, got %d", count)
+	if count != 6 {
+		t.Fatalf("expected 6 migrations, got %d", count)
 	}
 
 	if err := database.RunMigrations(db, filepath.Join("..", "..", "migrations")); err != nil {

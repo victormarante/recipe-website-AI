@@ -138,9 +138,22 @@ curl -X POST http://localhost:8080/api/v1/recipes/1/image \
   -F "image=@photo.jpg"
 ```
 
-The request is limited to 5 MB. Detected content type must be `image/jpeg`, `image/png`, or `image/webp`.
+Each file is limited to 15 MB. Detected content type must be `image/jpeg`, `image/png`, or `image/webp`.
 
-Images are stored under `recipes/{id}` in the configured bucket. Uploading a new image for the same recipe overwrites the previous object at that key. The backend does not currently set custom cache-control headers.
+The frontend crops the photo in the browser and sends three files together (`thumb` and `original` must be sent together, or not at all):
+
+```bash
+curl -X POST http://localhost:8080/api/v1/recipes/1/image \
+  -F "image=@framed.jpg" -F "thumb=@card.jpg" -F "original=@photo.jpg"
+```
+
+- `image`: the framed, full-resolution photo shown in the detail view.
+- `thumb`: a small copy of the same framing for list cards.
+- `original`: the untouched upload, kept as a backup and never shown.
+
+The response is `{"image_url": ...}`, plus `image_thumb_url` and `image_original_url` when all three files were sent. The recipe JSON exposes the same three fields (`null` when absent). Sending only `image` stores it as-is and clears the other two.
+
+Objects are stored as `recipes/{id}`, `recipes/{id}-thumb` and `recipes/{id}-original` in the configured bucket. Uploading again for the same recipe overwrites them. Every object is stored with `Cache-Control: public, max-age=31536000, immutable`, and the returned URLs end in `?v=<unix time>` so a replaced image is not served stale from a cache.
 
 ### Delete Recipe Image
 
@@ -150,7 +163,7 @@ curl -X DELETE http://localhost:8080/api/v1/recipes/1/image
 
 ## Database
 
-`migrations/001_create_tables.sql` creates the base `recipes` table and indexes. `migrations/002_add_recipe_metadata.sql` adds `oven_temperature` and `image_url`. `migrations/003_add_thumbnail_crop.sql` adds `thumb_x`, `thumb_y` and `thumb_zoom`. `migrations/004_add_oven_mode.sql` adds `oven_mode`.
+`migrations/001_create_tables.sql` creates the base `recipes` table and indexes. `migrations/002_add_recipe_metadata.sql` adds `oven_temperature` and `image_url`. `migrations/003_add_thumbnail_crop.sql` adds `thumb_x`, `thumb_y` and `thumb_zoom`. `migrations/004_add_oven_mode.sql` adds `oven_mode`. `migrations/005_add_tags.sql` adds `tags`. `migrations/006_add_image_variants.sql` adds `image_thumb_url` and `image_original_url`.
 
 Startup applies ordered SQL migrations once and records them in `schema_migrations`. Fresh databases reach the latest schema, and old databases are upgraded without resetting recipe data.
 
