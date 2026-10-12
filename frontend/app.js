@@ -254,6 +254,26 @@ function renderRecipeList() {
   }
 }
 
+// List thumbnail for a recipe; a static placeholder keeps the height when it has no photo.
+function buildThumb(recipe) {
+  const frame = document.createElement('div');
+  frame.className = 'recipe-card-thumb';
+  if (!recipe || !recipe.image_url) {
+    frame.classList.add('thumb-placeholder');
+    frame.setAttribute('aria-hidden', 'true');
+    return frame;
+  }
+  const thumb = document.createElement('img');
+  thumb.alt = recipe.title;
+  thumb.loading = 'lazy';
+  const thumbSrc = recipe.image_thumb_url || recipe.image_url;
+  applyThumbCrop(thumb, recipeCrop(recipe));
+  setThumbBackdrop(frame, thumbSrc);
+  thumb.src = thumbSrc;
+  frame.appendChild(thumb);
+  return frame;
+}
+
 function buildCard(recipe) {
   const card = document.createElement('div');
   card.className = 'recipe-card';
@@ -289,19 +309,7 @@ function buildCard(recipe) {
   actions.appendChild(editBtn);
   actions.appendChild(delBtn);
 
-  if (recipe.image_url) {
-    const thumbFrame = document.createElement('div');
-    thumbFrame.className = 'recipe-card-thumb';
-    const thumb = document.createElement('img');
-    thumb.alt = recipe.title;
-    thumb.loading = 'lazy';
-    const thumbSrc = recipe.image_thumb_url || recipe.image_url;
-    applyThumbCrop(thumb, recipeCrop(recipe));
-    setThumbBackdrop(thumbFrame, thumbSrc);
-    thumb.src = thumbSrc;
-    thumbFrame.appendChild(thumb);
-    card.appendChild(thumbFrame);
-  }
+  card.appendChild(buildThumb(recipe));
 
   card.appendChild(h3);
   if (tags.children.length > 0) card.appendChild(tags);
@@ -544,45 +552,17 @@ function renderCategoryCards() {
       (r.categories || []).map(c => c.toLowerCase().trim()).includes(cat));
 
     const card = document.createElement('div');
-    card.className = 'category-home-card';
+    card.className = 'recipe-card';
     card.addEventListener('click', () => selectCategory(cat));
 
-    const emoji = document.createElement('div');
-    emoji.className = 'cat-emoji';
-    emoji.textContent = getCategoryEmoji(cat);
+    // Category picture: the first recipe in it that has a photo.
+    card.appendChild(buildThumb(catRecipes.find(r => r.image_url)));
 
     const h3 = document.createElement('h3');
     h3.textContent = categoryLabel(cat);
-
-    const count = document.createElement('p');
-    count.className = 'cat-count';
-    count.textContent = `${catRecipes.length} ${t(catRecipes.length === 1 ? 'recipe' : 'recipes')}`;
-
-    const preview = document.createElement('ul');
-    preview.className = 'cat-preview';
-    catRecipes.slice(0, 3).forEach(r => {
-      const li = document.createElement('li');
-      li.textContent = r.title;
-      preview.appendChild(li);
-    });
-
-    card.appendChild(emoji);
     card.appendChild(h3);
-    card.appendChild(count);
-    card.appendChild(preview);
     grid.appendChild(card);
   });
-}
-
-function getCategoryEmoji(cat) {
-  const map = {
-    breakfast: '🍳', lunch: '🥙', dinner: '🍽', vegetarian: '🥦',
-    vegan: '🌱', dessert: '🍰', snack: '🍿', soup: '🍲',
-    pasta: '🍝', pizza: '🍕', salad: '🥗', meat: '🥩',
-    fish: '🐟', seafood: '🦐', baking: '🥖', bread: '🍞',
-    drinks: '🥤', cocktail: '🍹'
-  };
-  return map[cat.toLowerCase()] || '🍴';
 }
 
 function renderList(cat) {
