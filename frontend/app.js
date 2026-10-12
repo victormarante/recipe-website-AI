@@ -229,7 +229,7 @@ function getFilteredRecipes() {
     recipes = recipes.filter(r => (r.tags || []).includes(state.tagFilter));
   }
 
-  return recipes;
+  return [...recipes].sort((a, b) => a.title.localeCompare(b.title, LANG, { sensitivity: 'base' }));
 }
 
 function renderRecipeList() {
@@ -666,6 +666,7 @@ function openAddModal() {
   addStepRow('');
   hideThumbEditor();
   modalOverlay.classList.remove('hidden');
+  syncScrollLock();
   $('#form-title').focus();
 }
 
@@ -702,6 +703,7 @@ function openEditModal(id) {
   $('#form-image').value = '';
 
   modalOverlay.classList.remove('hidden');
+  syncScrollLock();
   $('#form-title').focus();
 }
 
@@ -718,6 +720,7 @@ function closeLightbox() {
 
 function closeModal() {
   modalOverlay.classList.add('hidden');
+  syncScrollLock();
   clearFormError();
 }
 
@@ -1015,6 +1018,7 @@ function openDeleteModal(id) {
   }
 
   deleteOverlay.classList.remove('hidden');
+  syncScrollLock();
 }
 
 function closeDeleteModal() {
@@ -1022,6 +1026,7 @@ function closeDeleteModal() {
   $('#btn-confirm-delete').disabled = false;
   $('#delete-block-msg').classList.add('hidden');
   deleteOverlay.classList.add('hidden');
+  syncScrollLock();
 }
 
 async function confirmDelete() {
@@ -1055,6 +1060,14 @@ function categoryLabel(cat) {
   return tCategory(cat) || capitalize(cat);
 }
 
+// ── Modal scroll lock ─────────────────────────────────────────────────────────
+
+// Freezes the page behind any open modal so touch drags can't move it.
+function syncScrollLock() {
+  const open = [modalOverlay, deleteOverlay, loginOverlay].some(o => !o.classList.contains('hidden'));
+  document.body.classList.toggle('modal-open', open);
+}
+
 // ── Mobile sidebar drawer ─────────────────────────────────────────────────────
 
 function toggleSidebar() {
@@ -1083,11 +1096,13 @@ function openLoginModal() {
   $('#login-form').reset();
   $('#login-error').classList.add('hidden');
   loginOverlay.classList.remove('hidden');
+  syncScrollLock();
   $('#login-pin').focus();
 }
 
 function closeLoginModal() {
   loginOverlay.classList.add('hidden');
+  syncScrollLock();
 }
 
 async function handleLogin(e) {

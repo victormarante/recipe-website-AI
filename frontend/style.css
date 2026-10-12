@@ -29,17 +29,19 @@
 }
 
 html {
-  scroll-behavior: smooth;
   overflow-x: hidden;
   -webkit-text-size-adjust: 100%;
   text-size-adjust: 100%;
 }
+
+@media (hover: hover) { html { scroll-behavior: smooth; } }
 
 body {
   font-family: var(--font-body);
   background: var(--clr-bg);
   color: var(--clr-text);
   min-height: 100vh;
+  min-height: 100dvh;
   display: flex;
   flex-direction: column;
 }
@@ -380,7 +382,6 @@ header h1 .md-icon { width: 1.6rem; height: 1.6rem; }
   display: flex;
   flex-direction: column;
   gap: .5rem;
-  border-left: 4px solid var(--clr-primary);
   overflow: hidden;
 }
 .recipe-card:hover { transform: translateY(-2px); box-shadow: var(--shadow-md); }
@@ -553,7 +554,10 @@ button.tag:hover { background: var(--clr-primary); color: #fff; }
   padding: 2rem 1rem;
   z-index: 200;
   overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
 }
+body.modal-open { overflow: hidden; }
 
 .modal {
   background: var(--clr-surface);
@@ -786,8 +790,11 @@ footer {
   #recipe-detail { padding: 1.25rem; }
   #recipe-detail h2 { font-size: 1.4rem; }
 
-  .modal { padding: 1.5rem; }
-  .form-actions { justify-content: stretch; }
+  /* Recipe form is a full-screen sheet on phones; small dialogs stay centred cards */
+  .modal-overlay { padding: 0; align-items: stretch; }
+  .modal { padding: 1.5rem; max-width: none; min-height: 100%; border-radius: 0; }
+  .modal.modal-sm { max-width: 400px; min-height: 0; border-radius: var(--radius); align-self: center; margin: 0 1rem; }
+  .form-actions { justify-content: stretch; position: sticky; bottom: 0; background: var(--clr-surface); padding: .75rem 0; }
   .form-actions .btn { flex: 1; justify-content: center; }
 
   /* Prevent iOS Safari auto-zoom on input focus (threshold is 16px) */
